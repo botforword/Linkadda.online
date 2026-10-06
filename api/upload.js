@@ -9,17 +9,80 @@ const customHttpsAgent = new https.Agent({
 });
 
 function getEnvConfig() {
-  const endpoint = String(process.env.RUSTFS_ENDPOINT || '').replace(/\/+$/, '');
-  const bucket = String(process.env.RUSTFS_BUCKET || 'linkadda-media').trim();
-  const region = String(process.env.RUSTFS_REGION || 'us-east-1').trim();
-  const accessKeyId = String(process.env.RUSTFS_ACCESS_KEY || '').trim();
-  const secretAccessKey = String(process.env.RUSTFS_SECRET_KEY || '').trim();
+  const supabaseUrl = process.env.SUPABASE_URL;
+  if (supabaseUrl) {
+    return {
+      type: 'supabase',
+      url: supabaseUrl,
+      bucket: process.env.SUPABASE_BUCKET || 'linkadda-media',
+    };
+  }
+  const endpoint = String(process.env.FILEBASE_ENDPOINT || process.env.S3_ENDPOINT || process.env.RUSTFS_ENDPOINT || 'https://s3.filebase.com').replace(/\/+$/, '');
+  const bucket = String(process.env.FILEBASE_BUCKET || process.env.S3_BUCKET || process.env.RUSTFS_BUCKET || 'linkadda-media').trim();
+  const region = String(process.env.FILEBASE_REGION || process.env.S3_REGION || process.env.RUSTFS_REGION || 'us-east-1').trim();
+  const accessKeyId = String(process.env.FILEBASE_ACCESS_KEY || process.env.S3_ACCESS_KEY || process.env.RUSTFS_ACCESS_KEY || '').trim();
+  const secretAccessKey = String(process.env.FILEBASE_SECRET_KEY || process.env.S3_SECRET_KEY || process.env.RUSTFS_SECRET_KEY || '').trim();
 
   if (!endpoint || !accessKeyId || !secretAccessKey) {
-    throw new Error('RustFS storage credentials are not properly configured on server.');
+    throw new Error('Storage credentials are not properly configured on server.');
   }
 
   return { endpoint, bucket, region, accessKeyId, secretAccessKey };
+}
+
+async function uploadToStorageBackend(key, buffer, contentType, s3Client, config) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseBucket = process.env.SUPABASE_BUCKET || 'linkadda-media';
+
+  if (supabaseUrl && serviceKey) {
+    const cleanKey = String(key || '').replace(/^\/+/, '');
+    const endpoint = `${supabaseUrl.replace(/\/+$/, '')}/storage/v1/object/${encodeURIComponent(supabaseBucket)}/${encodeURI(cleanKey)}`;
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'apikey': serviceKey,
+        'Authorization': `Bearer ${serviceKey}`,
+        'x-upsert': 'true',
+        'Content-Type': contentType || 'application/octet-stream',
+      },
+      body: buffer,
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Supabase upload failed (${res.status}): ${errText}`);
+    }
+    const publicUrl = `${supabaseUrl.replace(/\/+$/, '')}/storage/v1/object/public/${encodeURIComponent(supabaseBucket)}/${encodeURI(cleanKey)}`;
+    return {
+      key: cleanKey,
+      bucket: supabaseBucket,
+      publicUrl,
+    };
+  }
+
+  // Fallback to S3 / Filebase
+  if (s3Client && config) {
+    await s3Client.send(new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+    }));
+    return {
+      key,
+      bucket: config.bucket,
+      publicUrl: getPublicUrl(config, key),
+    };
+  }
+
+  throw new Error('No storage backend configured.');
+}
+
+function getPublicUrl(config, key) {
+  if (config.endpoint.includes('filebase.com')) {
+    return `https://${encodeURIComponent(config.bucket)}.s3.filebase.com/${encodeURI(key)}`;
+  }
+  return `${config.endpoint}/${encodeURIComponent(config.bucket)}/${encodeURI(key)}`;
 }
 
 const uploadRateLimitMap = new Map();
@@ -84,23 +147,28 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
+    const folder = String(body.folder || 'products').replace(/[^a-zA-Z0-9_-]/g, '') || 'products';
+    const isCustomerOrderProof = folder === 'orders';
 
-    // ━━ SECURITY CHECK: Caller must be verified Admin or Authenticated Seller ━━
-    const isAdmin = await verifyAdminRequest(req);
+    // ━━ SECURITY CHECK: Caller must be verified Admin or Authenticated Seller (except customer order screenshot proofs) ━━
+    let isAdmin = false;
     let isSeller = false;
 
-    const authHeader = req.headers.authorization || req.headers.Authorization || '';
-    const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const sellerId = String(body.sellerId || req.headers['x-seller-id'] || '').trim();
-    const sellerToken = String(body.sellerToken || body.token || bearerToken || '').trim();
-    const secret = getAuthSecret();
+    if (!isCustomerOrderProof) {
+      isAdmin = await verifyAdminRequest(req);
+      const authHeader = req.headers.authorization || req.headers.Authorization || '';
+      const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+      const sellerId = String(body.sellerId || req.headers['x-seller-id'] || '').trim();
+      const sellerToken = String(body.sellerToken || body.token || bearerToken || '').trim();
+      const secret = getAuthSecret();
 
-    if (sellerId && sellerToken && verifySellerToken(sellerId, sellerToken, secret)) {
-      isSeller = true;
-    }
+      if (sellerId && sellerToken && verifySellerToken(sellerId, sellerToken, secret)) {
+        isSeller = true;
+      }
 
-    if (!isAdmin && !isSeller) {
-      return res.status(401).json({ error: 'Unauthorized: Authentication required to upload files.' });
+      if (!isAdmin && !isSeller) {
+        return res.status(401).json({ error: 'Unauthorized: Authentication required to upload files.' });
+      }
     }
 
     const clientIp = getClientIp(req);
@@ -113,20 +181,27 @@ export default async function handler(req, res) {
     uploadRateLimitMap.set(clientIp, timestamps);
 
     const config = getEnvConfig();
-    const s3 = new S3Client({
-      endpoint: config.endpoint,
-      region: config.region,
-      credentials: {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
-      },
-      forcePathStyle: true,
-      requestHandler: {
-        httpsAgent: customHttpsAgent,
-      },
-    });
+    let s3 = null;
+    if (config.type !== 'supabase' && config.endpoint) {
+      s3 = new S3Client({
+        endpoint: config.endpoint,
+        region: config.region,
+        credentials: {
+          accessKeyId: config.accessKeyId,
+          secretAccessKey: config.secretAccessKey,
+        },
+        forcePathStyle: true,
+        requestHandler: {
+          httpsAgent: customHttpsAgent,
+        },
+      });
+    }
 
     const action = String(body.action || '').toLowerCase();
+
+    if (isCustomerOrderProof && (action === 'chunk' || action === 'assemble')) {
+      return res.status(400).json({ error: 'Order proofs must use direct upload mode.' });
+    }
 
     // ━━ 1. CHUNK UPLOAD MODE ━━
     if (action === 'chunk') {
@@ -212,7 +287,7 @@ export default async function handler(req, res) {
         }
       })();
 
-      const publicUrl = `${config.endpoint}/${encodeURIComponent(config.bucket)}/${encodeURI(key)}`;
+      const publicUrl = getPublicUrl(config, key);
 
       return res.status(200).json({
         success: true,
@@ -227,11 +302,9 @@ export default async function handler(req, res) {
     // ━━ 3. DIRECT UPLOAD MODE (Default for files < 3.5 MB) ━━
     let bodyBuffer;
     let contentType = 'image/png';
-    let folder = 'products';
     let filename = `asset_${Date.now()}.png`;
 
     if (typeof body === 'object' && body !== null) {
-      folder = String(body.folder || 'products').replace(/[^a-zA-Z0-9_-]/g, '') || 'products';
       filename = String(body.filename || `${Date.now()}_asset.png`).replace(/[^a-zA-Z0-9_.-]/g, '_');
       contentType = String(body.contentType || 'image/png');
 
@@ -248,6 +321,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No image or file data provided.' });
     }
 
+    if (isCustomerOrderProof && bodyBuffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Screenshot file size exceeds 5MB limit.' });
+    }
+
     if (!isAllowedExtension(filename)) {
       return res.status(400).json({ error: 'Invalid file extension. Only images (.png, .jpg, .jpeg, .webp) are allowed.' });
     }
@@ -258,20 +335,13 @@ export default async function handler(req, res) {
 
     const key = `${folder}/${filename}`;
 
-    await s3.send(new PutObjectCommand({
-      Bucket: config.bucket,
-      Key: key,
-      Body: bodyBuffer,
-      ContentType: contentType,
-    }));
-
-    const publicUrl = `${config.endpoint}/${encodeURIComponent(config.bucket)}/${encodeURI(key)}`;
+    const uploadRes = await uploadToStorageBackend(key, bodyBuffer, contentType, s3, config);
 
     return res.status(200).json({
       success: true,
-      key,
-      bucket: config.bucket,
-      publicUrl,
+      key: uploadRes.key,
+      bucket: uploadRes.bucket,
+      publicUrl: uploadRes.publicUrl,
       size: bodyBuffer.length,
       contentType,
     });

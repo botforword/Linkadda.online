@@ -196,7 +196,7 @@
     }
 
     try {
-      fetch('/api/seller/products', {
+      fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'track_view', productId: pid }),
@@ -218,7 +218,7 @@
     }
 
     try {
-      fetch('/api/seller/products', {
+      fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'toggle_like', productId: pid, isLiked: Boolean(isLiked) }),
@@ -252,17 +252,7 @@
     const mainTitle = document.getElementById('fkPvProductTitle');
     if (mainTitle) mainTitle.textContent = prod.title || 'Exclusive Pack';
 
-    // 1b. Verified Partner Seller Attribution Badge
-    const sellerRow = document.getElementById('fkPvSellerRow');
-    const sellerNamePill = document.getElementById('fkPvSellerName');
-    if (sellerRow) {
-      if (prod.sellerName) {
-        if (sellerNamePill) sellerNamePill.textContent = prod.sellerName;
-        sellerRow.style.display = 'inline-flex';
-      } else {
-        sellerRow.style.display = 'none';
-      }
-    }
+
 
     // 2. Special Badge / Category Tag (Direct from Admin record)
     const specialTag = document.getElementById('fkPvSpecialTag');
@@ -454,15 +444,7 @@
       updateCartBadges();
     }
 
-    // 8. Seller Details
-    const sellerNameEl = document.getElementById('fkPvSellerName');
-    const sellerCardNameEl = document.getElementById('fkPvSellerCardName');
-    const siteName = (window.liveCollections?.settings?.siteName) || 'Linkadda Official';
-    const sellerName = prod.sellerName || siteName;
-    if (sellerNameEl) sellerNameEl.textContent = sellerName;
-    if (sellerCardNameEl) sellerCardNameEl.textContent = sellerName;
-    const sellerRatingEl = document.getElementById('fkPvSellerRating');
-    if (sellerRatingEl) sellerRatingEl.innerHTML = `${ratingVal} <i class="fa-solid fa-star"></i>`;
+
 
     // 9. Media Showcase (4K Video & Images)
     renderGallery(prod);
@@ -556,11 +538,15 @@
     if (Array.isArray(prod.videos) && prod.videos.length) videos.push(...prod.videos.filter(Boolean));
     if (prod.video) videos.push(prod.video);
 
-    // Format clean RustFS S3 URLs
+    const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
     images = [...new Set(images)].map((u) => {
-      const str = String(u || '').trim();
+      let str = String(u || '').trim();
+      if (str.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || str.includes('noecylfqhtfwbjfkjxoo.supabase.co')) {
+        const pathPart = str.split('/linkadda-media/').pop() || str.split('/media/').pop() || str.split('/').pop();
+        return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
+      }
       if (str.startsWith('products/') || str.startsWith('categories/')) {
-        return `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/${str}`;
+        return `${SUPABASE_CDN_ROOT}/${str}`;
       }
       return str;
     }).filter(Boolean);

@@ -30,7 +30,7 @@
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>About Us — LinkAdda Shop | India's Premier Digital Content Marketplace</title>
+  <title>About Us — LinkAdda Online | India's Premier Digital Content Marketplace</title>
   <meta name="description" content="LinkAdda — India's leading curated digital content marketplace. Instant cloud delivery, verified creator packs, 100% discrete transactions, and 24/7 support." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -717,57 +717,7 @@
       line-height: 1.5;
     }
 
-    /* ━━ SELLER BANNER (Strictly Hidden for Unauthenticated Guests) ━━ */
-    .ab-seller-banner-wrap {
-      max-width: 1100px;
-      margin: 0 auto 56px;
-      padding: 0 20px;
-    }
-    .ab-seller-banner-card {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(225, 29, 72, 0.08) 100%);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      border-radius: 22px;
-      padding: 34px 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      box-shadow: var(--ab-shadow-sm);
-    }
-    .ab-seller-banner-info { max-width: 640px; }
-    .ab-seller-banner-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.72rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.7px;
-      color: #f59e0b;
-      background: rgba(245, 158, 11, 0.14);
-      padding: 3px 10px;
-      border-radius: 999px;
-      margin-bottom: 8px;
-    }
-    .ab-seller-banner-title {
-      font-family: var(--ab-font-display);
-      font-size: clamp(1.3rem, 2.5vw, 1.8rem);
-      font-weight: 850;
-      color: var(--ab-text);
-      line-height: 1.25;
-      margin-bottom: 8px;
-    }
-    .ab-seller-banner-desc {
-      font-size: 0.88rem;
-      color: var(--ab-text2);
-      line-height: 1.6;
-    }
-    .ab-seller-banner-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex-shrink: 0;
-    }
+
 
     /* ━━ FAQS ACCORDION ━━ */
     .ab-faq {
@@ -899,9 +849,6 @@
       .ab-stats-grid { grid-template-columns: repeat(2, 1fr); }
       .ab-marketplace-grid { grid-template-columns: 1fr; }
       .ab-process-grid { grid-template-columns: 1fr; }
-      .ab-support-grid { grid-template-columns: 1fr; }
-      .ab-seller-banner-card { flex-direction: column; align-items: stretch; text-align: left; }
-      .ab-seller-banner-actions { flex-direction: row; flex-wrap: wrap; }
     }
     @media (max-width: 640px) {
       :root {
@@ -941,15 +888,7 @@
         flex-shrink: 0 !important;
       }
 
-      /* Compact Partner Hub Pill on mobile */
-      #aboutNavSellerBtn {
-        padding: 6px 10px !important;
-        font-size: 0.78rem !important;
-        font-weight: 750 !important;
-        border-radius: 10px !important;
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-      }
+
 
       /* Telegram Desk: Icon only on mobile */
       .ab-btn-tg span { display: none !important; }
@@ -994,11 +933,7 @@
       .ab-market-card { padding: 18px 14px; border-radius: 16px; }
       .ab-process-step { padding: 16px 14px; border-radius: 14px; }
       .ab-guarantee-banner { flex-direction: column; text-align: left; align-items: flex-start; padding: 16px 14px; border-radius: 14px; gap: 10px; }
-      .ab-seller-banner-card { padding: 22px 14px; border-radius: 16px; }
-      .ab-seller-banner-title { font-size: 1.4rem; }
-      .ab-seller-banner-desc { font-size: 0.82rem; }
-      .ab-seller-banner-actions { flex-direction: column; width: 100%; }
-      .ab-seller-banner-actions a { width: 100%; justify-content: center; }
+
 
       .ab-footer { padding: 24px 12px 28px; }
       .ab-footer-links { gap: 12px; }
@@ -1022,11 +957,6 @@
         </a>
       </div>
       <div class="ab-nav-btns">
-        <!-- Partner Hub button visible to all visitors -->
-        <a href="./seller/index.html" id="aboutNavSellerBtn" class="ab-btn-back" style="border-color: var(--ab-border-glow); color: var(--ab-pink);">
-          <i class="fa-solid fa-crown" style="color: #f59e0b;"></i>
-          <span>Partner Hub</span>
-        </a>
         <button class="ab-theme-btn" id="abThemeToggle" type="button" title="Toggle Theme" aria-label="Toggle Theme">
           <i class="fa-solid fa-moon"></i>
           <i class="fa-solid fa-sun"></i>
@@ -1045,7 +975,6 @@
       <a href="#stats" class="ab-qlink active"><i class="fa-solid fa-chart-simple"></i> Highlights</a>
       <a href="#marketplace" class="ab-qlink"><i class="fa-solid fa-store"></i> Marketplace System</a>
       <a href="#process" class="ab-qlink"><i class="fa-solid fa-bolt"></i> How It Works</a>
-      <a href="#seller-banner" class="ab-qlink"><i class="fa-solid fa-crown"></i> Creator Hub</a>
       <a href="#support" class="ab-qlink"><i class="fa-solid fa-shield-heart"></i> Buyer Support</a>
       <a href="#faq" class="ab-qlink"><i class="fa-solid fa-circle-question"></i> FAQs</a>
     </div>
@@ -1060,7 +989,6 @@
     </p>
     <div class="ab-hero-btns">
       <a href="index.html#categoriesGrid" class="ab-btn-primary"><i class="fa-solid fa-layer-group"></i> Browse Store Packs</a>
-      <a href="./seller/apply.html" class="ab-btn-secondary" style="border-color: rgba(225, 29, 72, 0.4); color: var(--ab-pink);"><i class="fa-solid fa-crown" style="color: #f59e0b;"></i> Become a Seller</a>
       <a href="#support" class="ab-btn-secondary"><i class="fa-solid fa-shield-heart" style="color: #10b981;"></i> Buyer Protection</a>
       <a href="https://t.me/TRUSTED_BROTHER1234" target="_blank" rel="noopener" class="ab-btn-secondary"><i class="fa-brands fa-telegram" style="color: #0088cc;"></i> 24/7 Telegram Desk</a>
     </div>
@@ -1254,28 +1182,7 @@
     </div>
   </section>
 
-  <!-- CONTENT PARTNER PROGRAM (Publicly Visible to All Visitors) -->
-  <section class="ab-seller-banner-wrap" id="seller-banner">
-    <div class="ab-seller-banner-card">
-      <div class="ab-seller-banner-info">
-        <span class="ab-seller-banner-tag"><i class="fa-solid fa-crown"></i> Content Partner Program</span>
-        <h2 class="ab-seller-banner-title">Monetize Your Digital Collections on LinkAdda</h2>
-        <p class="ab-seller-banner-desc">
-          Are you a creator, collector, or channel owner? Monetize your Mega and Google Drive collections with 100% revenue share settled directly to your UPI within 7 days.
-        </p>
-      </div>
-      <div class="ab-seller-banner-actions">
-        <a href="./seller/apply.html" class="ab-btn-primary">
-          <i class="fa-solid fa-bolt"></i>
-          <span>Apply to Sell</span>
-        </a>
-        <a href="./seller/index.html" class="ab-btn-secondary">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i>
-          <span>Seller Hub</span>
-        </a>
-      </div>
-    </div>
-  </section>
+
 
   <!-- FAQS ACCORDION -->
   <section class="ab-faq" id="faq">
@@ -1355,18 +1262,13 @@
     <div class="ab-footer-links">
       <a href="index.html">Store Home</a>
       <a href="about.html">About LinkAdda</a>
-      <span id="aboutFooterSellerLinks" style="display: inline-flex; gap: 16px;">
-        <a href="./seller/index.html">Seller Hub</a>
-        <a href="./seller/apply.html">Become a Seller</a>
-        <a href="./seller/login.html">Seller Login</a>
-      </span>
       <a href="legal.html#privacy">Privacy Policy</a>
       <a href="legal.html#terms">Terms of Service</a>
       <a href="legal.html#refund">Refund Policy</a>
       <a href="https://t.me/TRUSTED_BROTHER1234" target="_blank" rel="noopener">Telegram Support</a>
       <a href="mailto:ritikanetwork96@gmail.com">Official Email: ritikanetwork96@gmail.com</a>
     </div>
-    <p>&copy; 2026 LinkAdda Shop. India's Premier Digital Content Marketplace. Official Support: ritikanetwork96@gmail.com</p>
+    <p>&copy; 2026 LinkAdda Online. India's Premier Digital Content Marketplace. Official Support: ritikanetwork96@gmail.com</p>
   </footer>
 
   <!-- FLOATING BACK TO TOP BUTTON -->
@@ -1393,19 +1295,7 @@
       });
     })();
 
-    /* Active Session Indicator for Partner Links */
-    (function() {
-      try {
-        var userRaw = localStorage.getItem('linkadda_customer_session');
-        if (userRaw) {
-          var user = JSON.parse(userRaw);
-          if (user && user.uid) {
-            var navPartner = document.getElementById('aboutNavSellerBtn');
-            if (navPartner) navPartner.setAttribute('title', 'Access Partner Hub (Logged in)');
-          }
-        }
-      } catch (_) {}
-    })();
+
 
     /* Interactive FAQ Accordion */
     (function() {
@@ -1535,14 +1425,14 @@
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyCD_cZXyfYd01FNg-DmRpyKKBIGR3NqeT4",
-      authDomain: "linkadda-cd1da.firebaseapp.com",
-      projectId: "linkadda-cd1da",
-      storageBucket: "linkadda-cd1da.firebasestorage.app",
-      messagingSenderId: "989651324387",
-      appId: "1:989651324387:web:f6e44be3daa9f4fc0c24d6",
-      measurementId: "G-PCH50PK2N7",
-      databaseURL: "https://linkadda-cd1da-default-rtdb.firebaseio.com"
+      apiKey: "AIzaSyAWEhBIIQSUd9emGnmBgxZrvOBB4TiVXig",
+      authDomain: "linkadda-online.firebaseapp.com",
+      databaseURL: "https://linkadda-online-default-rtdb.firebaseio.com",
+      projectId: "linkadda-online",
+      storageBucket: "linkadda-online.firebasestorage.app",
+      messagingSenderId: "286997279270",
+      appId: "1:286997279270:web:1535177b16a09b9545ace7",
+      measurementId: "G-9M9EB6JS74"
     };
 
     const app = initializeApp(firebaseConfig);

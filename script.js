@@ -463,438 +463,63 @@ function createShootingStar() {
 const shootingStarInterval = finePointer() ? 4500 : 6000;
 setInterval(createShootingStar, shootingStarInterval);
 
-// ===== REAL-TIME SOCIAL PROOF TICKER (NO BOTTOM POPUPS, 100% REAL LIVE DATA) =====
-const marqueeState = {
-  approvedOrders: [],
-  reviews: [],
-  visitorCountToday: 0,
-  weeklyCompletedOrders: 0,
-  weeklyVisitors: 0,
-  telegramClicksToday: 0
-};
-
-// Try loading cached real values so ticker immediately displays on first load
-try {
-  const cachedTicker = JSON.parse(localStorage.getItem('linkadda_ticker_cache') || '{}');
-  if (Array.isArray(cachedTicker.approvedOrders) && cachedTicker.approvedOrders.length) {
-    marqueeState.approvedOrders = cachedTicker.approvedOrders;
-  }
-  if (Array.isArray(cachedTicker.reviews) && cachedTicker.reviews.length) {
-    marqueeState.reviews = cachedTicker.reviews;
-  }
-  if (cachedTicker.visitorCountToday) marqueeState.visitorCountToday = Number(cachedTicker.visitorCountToday);
-  if (cachedTicker.weeklyCompletedOrders) marqueeState.weeklyCompletedOrders = Number(cachedTicker.weeklyCompletedOrders);
-  if (cachedTicker.weeklyVisitors) marqueeState.weeklyVisitors = Number(cachedTicker.weeklyVisitors);
-  if (cachedTicker.telegramClicksToday) marqueeState.telegramClicksToday = Number(cachedTicker.telegramClicksToday);
-} catch (_) {}
-
-// Real initial inventory & approved orders from database
-if (!marqueeState.approvedOrders.length) {
-  marqueeState.approvedOrders = ['SIS BRO', 'All Collection Pack', 'MOM SON 1k Videos', 'RP VIDEOS', '🌟Desi Mix Collection🌟'];
-}
-
-// Real initial buyer reviews from database testimonials
-if (!marqueeState.reviews.length) {
-  marqueeState.reviews = [
-    { name: 'Singisking', rating: 5, review: 'Delivered right on time, totally trusted and genuine. Now a regular buyer!' },
-    { name: 'Regular buyer', rating: 5, review: 'Absolutely authentic service with zero delays. 100% recommend!' },
-    { name: 'New buyer', rating: 5, review: 'Completely genuine, fast delivery, and lowest price. Truly grateful!' }
-  ];
-}
-
-function saveTickerCache() {
-  try {
-    localStorage.setItem('linkadda_ticker_cache', JSON.stringify({
-      approvedOrders: marqueeState.approvedOrders.slice(0, 15),
-      reviews: marqueeState.reviews.slice(0, 10),
-      visitorCountToday: marqueeState.visitorCountToday,
-      weeklyCompletedOrders: marqueeState.weeklyCompletedOrders,
-      weeklyVisitors: marqueeState.weeklyVisitors,
-      telegramClicksToday: marqueeState.telegramClicksToday
-    }));
-  } catch (_) {}
-}
-
-let marqueeTrackEl = null;
-
-function escapeMarqueeText(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function getRealMarqueeItems() {
-  const orderBadges = marqueeState.approvedOrders.map(order => {
-    const title = escapeMarqueeText(typeof order === 'string' ? order : (order.name || order.productName || order.title || 'VIP Pack'));
-    return `<span class="marquee-item"><span class="marquee-live-dot"></span><i class="fa-solid fa-bolt" style="color:#fbbf24;"></i><span>Order approved: <strong>${title}</strong> just delivered!</span></span>`;
-  });
-
-  const reviewBadges = marqueeState.reviews.map(rev => {
-    const author = escapeMarqueeText(rev.name || rev.author || 'Verified Buyer');
-    const rawComment = (rev.review || rev.comment || rev.text || 'Verified 5-star purchase').trim();
-    const comment = escapeMarqueeText(rawComment.length > 42 ? rawComment.slice(0, 39) + '...' : rawComment);
-    return `<span class="marquee-item"><i class="fa-solid fa-star" style="color:#fbbf24;"></i><span><strong style="color:#fbbf24;">5★ Rating</strong> from <strong>${author}</strong>: "${comment}"</span></span>`;
-  });
-
-  // REAL VISITORS TODAY (STRICT RULE: Only show milestone when real visitors reach 50+)
-  let todayVisitorBadge = null;
-  const visToday = Number(marqueeState.visitorCountToday) || 0;
-  if (visToday >= 50) {
-    let milestone = '50+';
-    if (visToday >= 500) milestone = '500+';
-    else if (visToday >= 300) milestone = '300+';
-    else if (visToday >= 200) milestone = '200+';
-    else if (visToday >= 100) milestone = '100+';
-
-    todayVisitorBadge = `<span class="marquee-item"><i class="fa-solid fa-users" style="color:#38bdf8;"></i><span><strong>${milestone} visitors</strong> visited the website today!</span></span>`;
-  }
-
-  // REAL WEEKLY COMPLETED ORDERS STAT
-  const weeklyOrdersBadge = `<span class="marquee-item"><i class="fa-solid fa-box-open" style="color:#10b981;"></i><span>Last week <strong>15+ orders</strong> completed!</span></span>`;
-
-  // REAL WEEKLY VISITORS STAT
-  const weeklyVisitorsBadge = `<span class="marquee-item"><i class="fa-solid fa-chart-line" style="color:#c084fc;"></i><span>Last week <strong>1k+ people</strong> explored the website!</span></span>`;
-
-  // REAL TELEGRAM REACHOUTS (Only when >= 50)
-  let tgBadge = null;
-  const tgClicks = Number(marqueeState.telegramClicksToday) || 0;
-  if (tgClicks >= 50) {
-    const tgMilestone = `${Math.floor(tgClicks / 50) * 50}+`;
-    tgBadge = `<span class="marquee-item"><i class="fa-brands fa-telegram" style="color:#38bdf8;"></i><span><strong>${tgMilestone} people</strong> reached out on Telegram today!</span></span>`;
-  }
-
-  const rawSequence = [];
-  let ordIdx = 0;
-  let revIdx = 0;
-
-  const maxLoops = Math.max(orderBadges.length, reviewBadges.length, 3);
-  for (let i = 0; i < maxLoops; i++) {
-    if (orderBadges.length > 0) {
-      rawSequence.push(orderBadges[ordIdx % orderBadges.length]);
-      ordIdx++;
-    }
-    if (i === 0 && todayVisitorBadge) {
-      rawSequence.push(todayVisitorBadge);
-    }
-    if (reviewBadges.length > 0) {
-      rawSequence.push(reviewBadges[revIdx % reviewBadges.length]);
-      revIdx++;
-    }
-    if (i === 0 && weeklyOrdersBadge) {
-      rawSequence.push(weeklyOrdersBadge);
-    }
-    if (i === 1 && weeklyVisitorsBadge) {
-      rawSequence.push(weeklyVisitorsBadge);
-    }
-    if (i === 2 && tgBadge) {
-      rawSequence.push(tgBadge);
-    }
-  }
-
-  if (rawSequence.length < 8 && rawSequence.length > 0) {
-    const initialSeq = [...rawSequence];
-    while (rawSequence.length < 8) {
-      rawSequence.push(...initialSeq);
-    }
-  }
-
-  const itemsWithDots = [];
-  rawSequence.forEach(item => {
-    itemsWithDots.push(item);
-    itemsWithDots.push('<span class="marquee-dot"></span>');
-  });
-
-  return itemsWithDots;
-}
-
-function renderMarqueeTrack() {
-  if (!marqueeTrackEl) {
-    const existing = document.querySelector('.marquee-track');
-    if (existing) marqueeTrackEl = existing;
-    else return;
-  }
-  const items = getRealMarqueeItems();
-  if (!items.length) return;
-  const duplicated = [...items, ...items];
-  marqueeTrackEl.innerHTML = duplicated.join('');
-}
-
-function buildMarquee() {
-  let wrap = document.querySelector('.marquee-wrap');
-  if (!wrap) {
-    wrap = document.createElement('div');
-    wrap.className = 'marquee-wrap';
-    const track = document.createElement('div');
-    track.className = 'marquee-track';
-    wrap.appendChild(track);
-    const header = document.querySelector('.fk-header');
-    if (header) {
-      header.after(wrap);
-    } else {
-      const hero = document.querySelector('.hero');
-      if (hero) hero.after(wrap);
-      else document.body.prepend(wrap);
-    }
-    marqueeTrackEl = track;
-  } else {
-    marqueeTrackEl = wrap.querySelector('.marquee-track');
-  }
-  renderMarqueeTrack();
-}
-
-window.addOrderToMarquee = function(orderTitle) {
-  if (!orderTitle) return;
-  const clean = String(orderTitle).trim();
-  marqueeState.approvedOrders = [clean, ...marqueeState.approvedOrders.filter(o => {
-    const name = typeof o === 'string' ? o : (o.name || o.productName || o.title || '');
-    return name.toLowerCase() !== clean.toLowerCase();
-  })].slice(0, 15);
-  saveTickerCache();
-  renderMarqueeTrack();
-};
-
-window.updateMarqueeWithOrders = function(orders) {
-  if (!Array.isArray(orders) || !orders.length) return;
-  const titles = orders.map(o => (typeof o === 'string' ? o : (o.name || o.productName || o.title || '')).trim()).filter(Boolean);
-  if (!titles.length) return;
-  const seen = new Set();
-  const deduped = [];
-  titles.forEach(t => {
-    const lower = t.toLowerCase();
-    if (!seen.has(lower)) {
-      seen.add(lower);
-      deduped.push(t);
-    }
-  });
-  marqueeState.approvedOrders = [...deduped, ...marqueeState.approvedOrders.filter(o => {
-    const name = (typeof o === 'string' ? o : (o.name || o.productName || o.title || '')).toLowerCase();
-    return !seen.has(name);
-  })].slice(0, 15);
-  saveTickerCache();
-  renderMarqueeTrack();
-};
-
-window.updateMarqueeReviews = function(reviews) {
-  if (!Array.isArray(reviews) || !reviews.length) return;
-  marqueeState.reviews = reviews.filter(r => r && (r.name || r.author)).slice(0, 10);
-  saveTickerCache();
-  renderMarqueeTrack();
-};
-
-window.updateMarqueeVisitors = function(stats) {
-  if (!stats) return;
-  let changed = false;
-  if (stats.today !== undefined && !isNaN(Number(stats.today))) {
-    marqueeState.visitorCountToday = Number(stats.today);
-    changed = true;
-  }
-  if (stats.weekly !== undefined && !isNaN(Number(stats.weekly))) {
-    marqueeState.weeklyVisitors = Number(stats.weekly);
-    changed = true;
-  }
-  if (changed) {
-    saveTickerCache();
-    renderMarqueeTrack();
-  }
-};
-
-window.updateMarqueeWeeklyOrders = function(count) {
-  if (count === undefined || isNaN(Number(count))) return;
-  marqueeState.weeklyCompletedOrders = Number(count);
-  saveTickerCache();
-  renderMarqueeTrack();
-};
-
-window.updateMarqueeTelegram = function(count) {
-  if (count === undefined || isNaN(Number(count))) return;
-  marqueeState.telegramClicksToday = Number(count);
-  saveTickerCache();
-  renderMarqueeTrack();
-};
-
-buildMarquee();
-
-// ===== ORBITING ICONS around hero visual =====
-const orbitData = [
-  { icon: 'fa-solid fa-film',    deg: 0,   r: '170px', dur: '10s' },
-  { icon: 'fa-solid fa-star',    deg: 90,  r: '170px', dur: '10s' },
-  { icon: 'fa-solid fa-bolt',    deg: 180, r: '170px', dur: '10s' },
-  { icon: 'fa-brands fa-telegram', deg: 270, r: '170px', dur: '10s' },
-];
-const heroVisual = document.querySelector('.hero-visual');
-if (heroVisual) {
-  orbitData.forEach(({ icon, deg, r, dur }) => {
-    const el = document.createElement('div');
-    el.className = 'orbit-icon';
-    el.innerHTML = `<i class="${icon}"></i>`;
-    el.style.cssText = `--start-deg:${deg}deg; --radius:${r}; animation-duration:${dur};`;
-    heroVisual.appendChild(el);
-  });
-}
-
-// ===== DYNAMIC TOAST NOTIFICATIONS & SOCIAL PROOF SYSTEM =====
+// ===== REAL-TIME SOCIAL PROOF TICKER & STATS BRIDGE =====
+// Active ticker rendering is handled by live-ticker.js.
+// This lightweight bridge maintains backward compatibility for window.__linkaddaToast without duplicate intervals or memory leaks.
 (function() {
-  const toastEngine = {
-    config: {
-      enabled: true,
-      interval: 8000,
-      duration: 3500,
-      showApprovedOrders: true,
-      showApprovedReviews: true,
-      showTelegramClicks: true,
-      showVisitors: true,
-      visitorBaseOffset: 100,
-      telegramClicksBaseOffset: 50,
-      visitorTemplate: '{count}+ visitors visited the website today!',
-      telegramTemplate: '{count}+ people DM\'d on Telegram today!',
-      approvedOrderTemplate: '⚡ Order approved: {name} just delivered!',
-      approvedReviewTemplate: '⭐ {stars} ({rating}/5) from {name}: {comment}',
-      customMessages: []
+  const toastBridge = {
+    setVisitorCount(count) {
+      if (count !== undefined && !isNaN(Number(count)) && typeof window.updateMarqueeVisitors === 'function') {
+        window.updateMarqueeVisitors({ today: Number(count) });
+      }
     },
-    state: {
-      approvedOrders: [],
-      approvedOrderIdx: 0,
-      approvedReviews: [],
-      approvedReviewIdx: 0,
-      visitorsCount: 15,
-      telegramClicks: 8,
-      timerId: null,
-      isShowing: false,
-      cycleStage: 0
+    setTelegramClicks(count) {
+      if (count !== undefined && !isNaN(Number(count)) && typeof window.updateMarqueeTelegram === 'function') {
+        window.updateMarqueeTelegram(Number(count));
+      }
     },
-
-    formatMilestone(count, step = 100, minVal = 50) {
-      const num = Math.max(0, Number(count) || 0);
-      if (num < minVal) return `${minVal}+`;
-      const rounded = Math.floor(num / step) * step;
-      return `${rounded > 0 ? rounded : minVal}+`;
-    },
-
-    getNextMessage() {
-      const cfg = this.config;
-      const st = this.state;
-      const candidates = [];
-
-      // 1. REAL Approved Orders (persistent pool 1 to 10 orders approved by admin)
-      if (cfg.showApprovedOrders && Array.isArray(st.approvedOrders) && st.approvedOrders.length > 0) {
-        const order = st.approvedOrders[st.approvedOrderIdx % st.approvedOrders.length];
-        st.approvedOrderIdx = (st.approvedOrderIdx + 1) % st.approvedOrders.length;
-        const orderName = (typeof order === 'string' ? order : (order.name || order.productName || order.package || order.title || 'Package')).trim();
-        const msg = cfg.approvedOrderTemplate.replace('{name}', orderName);
-        candidates.push({ icon: 'fa-solid fa-circle-check', msg, type: 'order' });
-      }
-
-      // 2. REAL Approved Reviews & Ratings (approved by admin)
-      if (cfg.showApprovedReviews && Array.isArray(st.approvedReviews) && st.approvedReviews.length > 0) {
-        const rev = st.approvedReviews[st.approvedReviewIdx % st.approvedReviews.length];
-        st.approvedReviewIdx = (st.approvedReviewIdx + 1) % st.approvedReviews.length;
-        const ratingNum = Math.min(5, Math.max(1, Number(rev.rating) || 5));
-        const stars = '★'.repeat(ratingNum);
-        const author = (rev.name || rev.author || 'Verified Buyer').trim();
-        const prod = (rev.productName || rev.product || '').trim();
-        const rawComment = (rev.comment || rev.text || rev.title || 'Verified 5-star rating').trim();
-        const comment = rawComment.length > 45 ? rawComment.slice(0, 42) + '...' : rawComment;
-        
-        let msg = cfg.approvedReviewTemplate
-          .replace('{stars}', stars)
-          .replace('{rating}', ratingNum)
-          .replace('{name}', author)
-          .replace('{product}', prod ? `on ${prod}` : '')
-          .replace('{comment}', `"${comment}"`);
-        candidates.push({ icon: 'fa-solid fa-star', msg, type: 'review' });
-      }
-
-      // 3. REAL Telegram DMs Milestone (only if real clicks exist)
-      if (cfg.showTelegramClicks) {
-        const totalTg = (Number(st.telegramClicks) || 0) + (Number(cfg.telegramClicksBaseOffset) || 0);
-        if (totalTg > 0) {
-          let msg = '';
-          if (totalTg >= 50) {
-            const milestoneTg = this.formatMilestone(totalTg, 50, 50);
-            msg = cfg.telegramTemplate.replace('{count}', milestoneTg.replace('+', ''));
-          } else {
-            msg = `✈️ ${totalTg} people reached out on Telegram today!`;
-          }
-          candidates.push({ icon: 'fa-brands fa-telegram', msg, type: 'telegram' });
-        }
-      }
-
-      // 4. REAL Website Visitors Milestone (only if real visits exist)
-      if (cfg.showVisitors) {
-        const totalVis = (Number(st.visitorsCount) || 0) + (Number(cfg.visitorBaseOffset) || 0);
-        if (totalVis > 0) {
-          let msg = '';
-          if (totalVis >= 100) {
-            const milestoneVis = this.formatMilestone(totalVis, 100, 100);
-            msg = cfg.visitorTemplate.replace('{count}', milestoneVis.replace('+', ''));
-          } else {
-            msg = `👥 ${totalVis} visitors explored the website today!`;
-          }
-          candidates.push({ icon: 'fa-solid fa-users', msg, type: 'visitors' });
-        }
-      }
-
-      // 5. Custom Admin Announcements (if configured by admin)
-      if (Array.isArray(cfg.customMessages) && cfg.customMessages.length > 0) {
-        cfg.customMessages.forEach(item => {
-          if (item && item.msg) candidates.push(item);
-        });
-      }
-
-      if (!candidates.length) {
-        return null; // Zero fake data: if no real approved data exists, don't show fake popups
-      }
-
-      const item = candidates[st.cycleStage % candidates.length];
-      st.cycleStage = (st.cycleStage + 1) % candidates.length;
-      return item;
-    },
-
-    showToast(overrideData = null) {
-      // STRICT ZERO BOTTOM POPUPS: Remove any lingering toast divs completely
+    recordTelegramClick() {
       try {
-        document.querySelectorAll('.toast').forEach(t => t.remove());
-      } catch (_) {}
-
-      const data = overrideData;
-      if (!data) return;
-
-      if (data.type === 'order' || (data.msg && data.msg.toLowerCase().includes('order approved'))) {
-        const match = data.msg.match(/order approved:\s*([^\s!]+(?:\s+[^\s!]+)*)\s+just delivered!/i);
-        const name = match ? match[1] : (data.name || '');
-        if (name && typeof window.addOrderToMarquee === 'function') {
-          window.addOrderToMarquee(name);
+        const today = new Date().toISOString().slice(0, 10);
+        const storedKey = `linkadda_tg_clicks_${today}`;
+        const prev = Number(localStorage.getItem(storedKey) || 0) + 1;
+        localStorage.setItem(storedKey, String(prev));
+        if (typeof window.updateMarqueeTelegram === 'function') {
+          window.updateMarqueeTelegram(prev);
         }
-      }
-    },
-
-    start() {
-      // Bottom toast popup loop is completely disabled.
-      if (this.state.timerId) {
-        clearInterval(this.state.timerId);
-        this.state.timerId = null;
-      }
-      try {
-        document.querySelectorAll('.toast').forEach(t => t.remove());
       } catch (_) {}
     },
-
+    setApprovedOrders(orders) {
+      if (Array.isArray(orders) && typeof window.updateMarqueeWithOrders === 'function') {
+        window.updateMarqueeWithOrders(orders);
+      }
+    },
+    setApprovedReviews(reviews) {
+      if (Array.isArray(reviews) && typeof window.updateMarqueeReviews === 'function') {
+        window.updateMarqueeReviews(reviews);
+      }
+    },
+    addApprovedOrder(order) {
+      if (!order) return;
+      const title = typeof order === 'string' ? order : (order.name || order.productName || order.title || '');
+      if (title && typeof window.addOrderToMarquee === 'function') {
+        window.addOrderToMarquee(title);
+      }
+    },
+    addApprovedReview(rev) {
+      if (!rev) return;
+      if (typeof window.updateMarqueeReviews === 'function') {
+        window.updateMarqueeReviews([rev]);
+      }
+    },
     updateConfig(newSettings) {
       if (!newSettings || typeof newSettings !== 'object') return;
-      
-      // Approved orders pool from real settings
       if (Array.isArray(newSettings.recentApproved)) {
         this.setApprovedOrders(newSettings.recentApproved);
       }
-
-      // Approved reviews pool from settings
       if (Array.isArray(newSettings.recentApprovedReviews)) {
         this.setApprovedReviews(newSettings.recentApprovedReviews);
       }
-
-      // Live activity from settings
       if (newSettings.liveActivity) {
         if (newSettings.liveActivity.todayVisitors !== undefined) {
           this.setVisitorCount(newSettings.liveActivity.todayVisitors);
@@ -903,99 +528,12 @@ if (heroVisual) {
           this.setTelegramClicks(newSettings.liveActivity.telegramClicks);
         }
       }
-
-      this.start();
     },
-
-    setApprovedOrders(orders) {
-      if (!Array.isArray(orders)) return;
-      const valid = orders.filter(o => o && (typeof o === 'string' || o.name || o.productName));
-      this.state.approvedOrders = valid.slice(0, 15);
-      if (typeof window.updateMarqueeWithOrders === 'function') {
-        window.updateMarqueeWithOrders(this.state.approvedOrders);
-      }
-    },
-
-    setApprovedReviews(reviews) {
-      if (!Array.isArray(reviews)) return;
-      this.state.approvedReviews = reviews.slice(0, 10);
-      if (typeof window.updateMarqueeReviews === 'function') {
-        window.updateMarqueeReviews(this.state.approvedReviews);
-      }
-    },
-
-    addApprovedOrder(order) {
-      if (!order) return;
-      const orderTitle = (typeof order === 'string' ? order : (order.name || order.productName || order.title || 'VIP Pack')).trim();
-      const orderId = order.id || orderTitle;
-      const filtered = this.state.approvedOrders.filter(o => {
-        const id = o.id || (typeof o === 'string' ? o : o.name);
-        return id !== orderId;
-      });
-      this.state.approvedOrders = [{ id: orderId, name: orderTitle, ...order }, ...filtered].slice(0, 15);
-      if (typeof window.addOrderToMarquee === 'function') {
-        window.addOrderToMarquee(orderTitle);
-      }
-    },
-
-    addApprovedReview(rev) {
-      if (!rev) return;
-      const list = [rev, ...this.state.approvedReviews.filter(r => (r.id || r) !== (rev.id || rev))];
-      this.state.approvedReviews = list.slice(0, 10);
-      if (typeof window.updateMarqueeReviews === 'function') {
-        window.updateMarqueeReviews(this.state.approvedReviews);
-      }
-    },
-
-    setVisitorCount(count) {
-      if (count !== undefined && !isNaN(Number(count))) {
-        this.state.visitorsCount = Number(count);
-        if (typeof window.updateMarqueeVisitors === 'function') {
-          window.updateMarqueeVisitors({ today: count });
-        }
-      }
-    },
-
-    setTelegramClicks(count) {
-      if (count !== undefined && !isNaN(Number(count))) {
-        this.state.telegramClicks = Number(count);
-        if (typeof window.updateMarqueeTelegram === 'function') {
-          window.updateMarqueeTelegram(count);
-        }
-      }
-    },
-
-    recordTelegramClick() {
-      this.state.telegramClicks = (Number(this.state.telegramClicks) || 0) + 1;
-      if (typeof window.updateMarqueeTelegram === 'function') {
-        window.updateMarqueeTelegram(this.state.telegramClicks);
-      }
-      try {
-        const today = new Date().toISOString().slice(0, 10);
-        const storedKey = `linkadda_tg_clicks_${today}`;
-        const prev = Number(localStorage.getItem(storedKey) || 0);
-        localStorage.setItem(storedKey, String(prev + 1));
-      } catch (_) {}
-    }
+    showToast() {},
+    start() {}
   };
 
-  window.__linkaddaToast = toastEngine;
-
-  // Initial startup: ensure bottom toasts are gone and local stats hydrated
-  setTimeout(() => {
-    try {
-      const today = new Date().toISOString().slice(0, 10);
-      const localTg = Number(localStorage.getItem(`linkadda_tg_clicks_${today}`) || 0);
-      if (localTg > 0) toastEngine.setTelegramClicks(localTg);
-      
-      const cachedSettings = localStorage.getItem('linkadda_settings_cache');
-      if (cachedSettings) {
-        toastEngine.updateConfig(JSON.parse(cachedSettings));
-      }
-    } catch (_) {}
-
-    toastEngine.start();
-  }, 100);
+  window.__linkaddaToast = toastBridge;
 })();
 
 // ===== HERO SPOTLIGHT on mousemove =====
@@ -1009,39 +547,7 @@ if (heroSection && pointerEffectsEnabled()) {
   heroSection.addEventListener('pointermove', updateHeroSpotlight, { passive: true });
 }
 
-// ===== PARTICLE BURST on button click =====
-document.querySelectorAll('.btn-primary, .btn-card, .btn-card-action, .btn-add-cart, .cpb-btn, .cpb-btn-cart').forEach(btn => {
-  btn.addEventListener('click', function(e) {
-    for (let i = 0; i < 12; i++) {
-      const burst = document.createElement('div');
-      const angle = (i / 12) * 360;
-      const dist  = 60 + Math.random() * 40;
-      const size  = 4 + Math.random() * 4;
-      const color = ['#e84393','#7c3aed','#f472b6','#f59e0b'][Math.floor(Math.random()*4)];
-      burst.style.cssText = `
-        position:fixed;
-        left:${e.clientX}px; top:${e.clientY}px;
-        width:${size}px; height:${size}px;
-        border-radius:50%;
-        background:${color};
-        pointer-events:none;
-        z-index:9999;
-        transform:translate(-50%,-50%);
-        animation: burstAnim 0.6s ease forwards;
-        --bx:${Math.cos(angle * Math.PI/180) * dist}px;
-        --by:${Math.sin(angle * Math.PI/180) * dist}px;
-        box-shadow: 0 0 ${size*2}px ${color};
-      `;
-      document.body.appendChild(burst);
-      setTimeout(() => burst.remove(), 700);
-    }
-  });
-});
 
-// Inject burst keyframe
-const burstStyle = document.createElement('style');
-burstStyle.textContent = `@keyframes burstAnim { to { transform: translate(calc(-50% + var(--bx)), calc(-50% + var(--by))); opacity:0; } }`;
-document.head.appendChild(burstStyle);
 
 // ===== EXIT INTENT POPUP =====
 (function() {

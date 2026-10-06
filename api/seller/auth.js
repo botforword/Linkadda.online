@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { handleCors, getAuthSecret, isValidEmail, getFirebaseAdminToken, SELLER_MEMORY_STORE } from '../_utils.js';
 
-const RTDB_URL = 'https://linkadda-cd1da-default-rtdb.firebaseio.com';
+const RTDB_URL = 'https://linkadda-online-default-rtdb.firebaseio.com';
 
 const sellerFailedLoginMap = globalThis.__SELLER_FAILED_LOGINS || (globalThis.__SELLER_FAILED_LOGINS = new Map());
 const MAX_SELLER_LOGIN_ATTEMPTS = 5;
@@ -70,7 +70,7 @@ function renderPasswordResetEmail(ownerName, storeName, otpCode) {
           <tr>
             <td style="padding: 16px 28px; background: rgba(255, 255, 255, 0.02); border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center;">
               <p style="margin: 0; font-size: 11px; color: #64748b;">
-                &copy; ${new Date().getFullYear()} LinkAdda Shop &bull; Seller Partner Security
+                &copy; ${new Date().getFullYear()} LinkAdda Online &bull; Seller Partner Security
               </p>
             </td>
           </tr>
@@ -135,7 +135,7 @@ function renderPasswordChangedNotificationEmail(ownerName, storeName, timestampS
           <tr>
             <td style="padding: 16px 28px; background: rgba(255, 255, 255, 0.02); border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center;">
               <p style="margin: 0; font-size: 11px; color: #64748b;">
-                &copy; ${new Date().getFullYear()} LinkAdda Shop &bull; Seller Partner Security
+                &copy; ${new Date().getFullYear()} LinkAdda Online &bull; Seller Partner Security
               </p>
             </td>
           </tr>
@@ -371,11 +371,11 @@ export default async function handler(req, res) {
       // Send Security Confirmation Email via Brevo API
       const apiKey = (process.env.BREVO_API_KEY || '').trim();
       const senderEmail = (process.env.BREVO_SENDER_EMAIL || 'ritikanetwork96@gmail.com').trim();
-      const senderName = (process.env.BREVO_SENDER_NAME || 'Linkadda Shop').trim();
+      const senderName = (process.env.BREVO_SENDER_NAME || 'Linkadda Online').trim();
 
       const reqHost = req.headers['host'] || req.headers['x-forwarded-host'] || '';
       const isLocal = reqHost.includes('localhost') || reqHost.includes('127.0.0.1');
-      const portalUrl = isLocal ? `http://${reqHost}/seller/login` : 'https://linkadda.shop/seller/login';
+      const portalUrl = isLocal ? `http://${reqHost}/seller/login` : 'https://linkadda.online/seller/login';
 
       if (apiKey && seller.email) {
         try {
@@ -451,7 +451,7 @@ export default async function handler(req, res) {
       // Send OTP via Brevo API
       const apiKey = (process.env.BREVO_API_KEY || '').trim();
       const senderEmail = (process.env.BREVO_SENDER_EMAIL || 'ritikanetwork96@gmail.com').trim();
-      const senderName = (process.env.BREVO_SENDER_NAME || 'Linkadda Shop').trim();
+      const senderName = (process.env.BREVO_SENDER_NAME || 'Linkadda Online').trim();
 
       if (apiKey) {
         try {

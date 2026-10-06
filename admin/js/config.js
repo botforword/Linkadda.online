@@ -8,14 +8,14 @@ export const APP_CONFIG = {
 };
 
 export const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyCD_cZXyfYd01FNg-DmRpyKKBIGR3NqeT4',
-  authDomain: 'linkadda-cd1da.firebaseapp.com',
-  databaseURL: 'https://linkadda-cd1da-default-rtdb.firebaseio.com',
-  projectId: 'linkadda-cd1da',
-  storageBucket: 'linkadda-cd1da.firebasestorage.app',
-  messagingSenderId: '989651324387',
-  appId: '1:989651324387:web:f6e44be3daa9f4fc0c24d6',
-  measurementId: 'G-PCH50PK2N7',
+  apiKey: 'AIzaSyAWEhBIIQSUd9emGnmBgxZrvOBB4TiVXig',
+  authDomain: 'linkadda-online.firebaseapp.com',
+  databaseURL: 'https://linkadda-online-default-rtdb.firebaseio.com',
+  projectId: 'linkadda-online',
+  storageBucket: 'linkadda-online.firebasestorage.app',
+  messagingSenderId: '286997279270',
+  appId: '1:286997279270:web:1535177b16a09b9545ace7',
+  measurementId: 'G-9M9EB6JS74',
 };
 
 // RustFS S3-compatible public config (No secrets on frontend!)
@@ -25,11 +25,11 @@ export const RUSTFS_CONFIG = {
   region: 'us-east-1',
 };
 
-// Supabase config retained for zero-downtime transition & backward compatibility
+// Supabase config for media storage
 export const SUPABASE_CONFIG = {
-  url: 'https://noecylfqhtfwbjfkjxoo.supabase.co',
-  anonKey: 'sb_publishable_HHXzUZGaMXTpCXQVqiNBwQ_ZEbe_E2z',
-  bucket: 'media',
+  url: 'https://dsleaglxbedljdxrikdn.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzbGVhZ2x4YmVkbGpkeHJpa2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMjcwOTIsImV4cCI6MjEwNjgwMzA5Mn0.sRzSAOIcgdObrx-uInPI8CE-96I24Jqyhr3K--pxuIw',
+  bucket: 'linkadda-media',
 };
 
 export const RTDB_NODES = {

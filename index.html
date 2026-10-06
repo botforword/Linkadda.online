@@ -35,16 +35,16 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Linkadda Shop</title>
+  <title>Linkadda Online</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css?v=20260920c" />
-  <link rel="stylesheet" href="linkadda-store.css?v=20260920c" />
-  <link rel="stylesheet" href="auth-modal.css?v=20260916a" />
-  <link rel="stylesheet" href="mobile-app.css?v=20260920d" />
+  <link rel="stylesheet" href="style.css?v=20261005a" />
+  <link rel="stylesheet" href="linkadda-store.css?v=20261005a" />
+  <link rel="stylesheet" href="auth-modal.css?v=20261005a" />
+  <link rel="stylesheet" href="mobile-app.css?v=20261005a" />
   <script src="preload.js?v=20260920c"></script>
   <style id="critical-hero-toast-fix">
     /* Hero Title: White top line, neon glowing gradient for second line */
@@ -590,7 +590,7 @@
         <i class="fa-solid fa-fire-flame-curved loader-icon"></i>
       </div>
       <div class="loader-text-wrap">
-        <h2 class="loader-title">LinkAdda <span class="loader-accent">Shop</span></h2>
+        <h2 class="loader-title">LinkAdda <span class="loader-accent">Online</span></h2>
         <p class="loader-sub">Loading authentic store...</p>
       </div>
       <div class="loader-bar-wrap">
@@ -615,9 +615,9 @@
             <i class="fa-solid fa-bell"></i>
             <span class="fk-notif-badge-dot" id="headerNotifDot"></span>
           </button>
-          <button type="button" class="fk-user-btn-wrap" id="headerUserBtn" title="Account / Profile" onclick="window.showProfilePage ? window.showProfilePage() : (window.location.hash = '#profile')">
-            <i class="fa-solid fa-user"></i>
-            <span class="fk-user-btn-text" id="headerUserBtnText">Login</span>
+          <button type="button" class="fk-user-btn-wrap" id="headerUserBtn" title="Settings & Preferences" onclick="window.showProfilePage ? window.showProfilePage() : (window.location.hash = '#settings')">
+            <i class="fa-solid fa-gear" style="color: #ff2a8d; font-size: 1.05rem;"></i>
+            <span class="fk-user-btn-text" id="headerUserBtnText">Settings</span>
           </button>
           <button type="button" class="fk-cart-btn-wrap" id="headerCartBtn" title="Shopping Cart">
             <i class="fa-solid fa-cart-shopping"></i>
@@ -792,11 +792,7 @@
           <!-- Title & Rating Card -->
           <section class="fk-info-section">
             <h1 class="fk-pv-product-title" id="fkPvProductTitle">Product Title</h1>
-            <div id="fkPvSellerRow" style="display:none; align-items:center; gap:8px; margin: 6px 0 10px; font-size:0.84rem; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); padding:5px 12px; border-radius:8px; width:fit-content;">
-              <i class="fa-solid fa-circle-check" style="color:#10b981;"></i>
-              <span style="color:var(--la-text-secondary, #334155);">Sold by: <strong id="fkPvSellerName" style="color:var(--la-text, #0f172a); font-weight:800;">Creator Store</strong></span>
-              <span style="font-size:0.72rem; font-weight:800; color:#059669; background:rgba(16,185,129,0.2); padding:2px 6px; border-radius:4px;">✓ Verified Partner</span>
-            </div>
+
             <div class="fk-pv-rating-bar">
               <span class="fk-pv-rating-badge"><span id="fkPvRatingScore">4.9</span> <i class="fa-solid fa-star" style="color:var(--la-gold);font-size:11px;"></i></span>
               <span class="fk-pv-rating-text" id="fkPvRatingText">Verified VIP Access · 100% Genuine Media</span>
@@ -876,19 +872,7 @@
             </table>
           </section>
 
-          <!-- Seller Card -->
-          <div class="fk-seller-card">
-            <div class="fk-seller-info">
-              <div class="fk-seller-icon">
-                <i class="fa-solid fa-store"></i>
-              </div>
-              <div>
-                <div class="fk-seller-sub">OFFICIAL VERIFIED CREATOR</div>
-                <div class="fk-seller-name" id="fkPvSellerCardName">LinkAdda Verified Studio</div>
-              </div>
-            </div>
-            <div class="fk-seller-rating" id="fkPvSellerRating">4.9 <i class="fa-solid fa-star"></i></div>
-          </div>
+
 
           <!-- Ratings & Reviews Section -->
           <section class="fk-reviews-section">
@@ -995,7 +979,7 @@
     <!-- Mobile nav -->
     <div class="mobile-nav" id="mobileNav">
       <button class="mob-user-btn" id="mobUserBtn" type="button" onclick="window.showProfilePage ? window.showProfilePage() : (window.location.hash = '#profile')" style="width: 100%; margin: 0 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-radius: 9999px; background: rgba(255, 42, 141, 0.14); border: 1.5px solid rgba(255, 42, 141, 0.35); color: #ff65a3; font-weight: 700; font-size: 0.88rem; cursor: pointer;">
-        <i class="fa-solid fa-circle-user"></i> <span id="mobUserBtnText">Sign In / Account</span>
+        <i class="fa-solid fa-circle-user"></i> <span id="mobUserBtnText">Account</span>
       </button>
       <button class="header-currency-toggle" id="mobCurrencyToggle" type="button" style="margin: 0 auto 10px; width: fit-content;">
         <i class="fa-solid fa-coins"></i> <span id="mobCurrencyToggleText">Currency: ₹ INR</span>
@@ -1152,7 +1136,7 @@
           <i class="fa-solid fa-crown"></i> Who We Are
         </div>
         <h2 class="about-teaser-title">
-          About <span class="gradient-text">LinkAdda Shop</span>
+          About <span class="gradient-text">LinkAdda Online</span>
         </h2>
         <p class="about-teaser-desc">
           India's premier verified digital content store since 2022. Serving 1,200+ satisfied buyers with 3 Lac+ hand-curated 4K videos across 40+ exclusive categories. Instant delivery, discrete billing, zero scams.
@@ -1193,7 +1177,7 @@
         <div class="footer-brand">
           <div class="footer-logo-wrap">
             <i class="fa-solid fa-fire-flame-curved logo-icon"></i>
-            <span class="logo-text">Linkadda <span class="logo-accent">Shop</span></span>
+            <span class="logo-text">Linkadda <span class="logo-accent">Online</span></span>
           </div>
           <p class="footer-desc">India's trusted digital content store. 3 Lac+ premium 4K videos across 40+ categories. Instant Telegram delivery.</p>
           <div class="footer-trust-tag">
@@ -1206,8 +1190,7 @@
           <a href="index.html"><i class="fa-solid fa-house"></i> Home</a>
           <a href="about.html"><i class="fa-solid fa-circle-info"></i> About Us</a>
           <a href="#pinnedDealWrapper"><i class="fa-solid fa-layer-group"></i> Browse Packs</a>
-          <a href="/seller/apply"><i class="fa-solid fa-store"></i> Become a Seller</a>
-          <a href="/seller"><i class="fa-solid fa-crown" style="color: #f59e0b;"></i> Seller Hub</a>
+
           <a href="about.html#faq"><i class="fa-solid fa-circle-question"></i> FAQ</a>
         </div>
 
@@ -1234,49 +1217,11 @@
       </div>
 
       <div class="footer-bottom">
-        <p class="footer-copy">&copy; 2026 Linkadda Shop. All rights reserved.</p>
+        <p class="footer-copy">&copy; 2026 Linkadda Online. All rights reserved.</p>
         <p class="footer-made">Made with <i class="fa-solid fa-heart" style="color:#e11d48;"></i> in India</p>
       </div>
     </div>
   </footer>
-
-  <script>
-    /* Theme toggle for Header button */
-    window.toggleStoreTheme = function(e) {
-      if (e && typeof e.preventDefault === 'function') e.preventDefault();
-      var doc = document.documentElement;
-      var cur = doc.getAttribute('data-theme') || 'light';
-      var next = cur === 'light' ? 'dark' : 'light';
-      doc.setAttribute('data-theme', next);
-      document.body.setAttribute('data-theme', next);
-      try {
-        localStorage.setItem('linkadda_theme', next);
-        localStorage.setItem('linkadda_theme_manual', 'true');
-      } catch(err){}
-      var moon = document.getElementById('headerThemeMoon');
-      var sun = document.getElementById('headerThemeSun');
-      if (moon && sun) {
-        if (next === 'light') { moon.style.display = 'inline-block'; sun.style.display = 'none'; }
-        else { moon.style.display = 'none'; sun.style.display = 'inline-block'; }
-      }
-      window.dispatchEvent(new CustomEvent('linkadda:themechange', { detail: { theme: next } }));
-    };
-    (function(){
-      try {
-        var manual = localStorage.getItem('linkadda_theme_manual');
-        var saved = localStorage.getItem('linkadda_theme');
-        var s = (manual && saved) ? saved : 'light';
-        document.documentElement.setAttribute('data-theme', s);
-        document.body.setAttribute('data-theme', s);
-        var moon = document.getElementById('headerThemeMoon');
-        var sun = document.getElementById('headerThemeSun');
-        if (moon && sun) {
-          if (s === 'light') { moon.style.display = 'inline-block'; sun.style.display = 'none'; }
-          else { moon.style.display = 'none'; sun.style.display = 'inline-block'; }
-        }
-      } catch(e){}
-    })();
-  </script>
 
   <!-- ===== LIGHTBOX MODAL ===== -->
   <div class="lightbox-overlay" id="lightboxOverlay">
@@ -1286,7 +1231,6 @@
   </div>
 
   <script src="script.js?v=9"></script>
-  <script src="preload.js?v=2" defer></script>
 
   <!-- ------ FIREBASE INTEGRATION ------ -->
   <script type="module">
@@ -1294,14 +1238,14 @@
   import { getDatabase, ref, get, push, set, onValue } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyCD_cZXyfYd01FNg-DmRpyKKBIGR3NqeT4",
-    authDomain: "linkadda-cd1da.firebaseapp.com",
-    projectId: "linkadda-cd1da",
-    storageBucket: "linkadda-cd1da.firebasestorage.app",
-    messagingSenderId: "989651324387",
-    appId: "1:989651324387:web:f6e44be3daa9f4fc0c24d6",
-    measurementId: "G-PCH50PK2N7",
-    databaseURL: "https://linkadda-cd1da-default-rtdb.firebaseio.com"
+    apiKey: "AIzaSyAWEhBIIQSUd9emGnmBgxZrvOBB4TiVXig",
+    authDomain: "linkadda-online.firebaseapp.com",
+    databaseURL: "https://linkadda-online-default-rtdb.firebaseio.com",
+    projectId: "linkadda-online",
+    storageBucket: "linkadda-online.firebasestorage.app",
+    messagingSenderId: "286997279270",
+    appId: "1:286997279270:web:1535177b16a09b9545ace7",
+    measurementId: "G-9M9EB6JS74"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -1635,13 +1579,7 @@
         let raw = String(h.title).trim();
         let clean = raw.replace(/<\/?(span|b|strong|em|p|h\d)[^>]*>/gi, '').trim();
         let parts = clean.includes('<br') ? clean.split(/<br\s*\/?>/i) : clean.split('\n');
-        if (parts.length === 1) {
-          const upper = parts[0].toUpperCase();
-          if (upper.includes('CONTENT SELLER')) {
-            const idx = upper.indexOf('CONTENT SELLER');
-            parts = [parts[0].substring(0, idx).trim(), parts[0].substring(idx).trim()];
-          }
-        }
+
         if (parts.length > 1 && parts[1]) {
           el.innerHTML = esc(parts[0]) + '<br /><span class="gradient-text">' + esc(parts.slice(1).join(' ')) + '</span>';
         } else {
@@ -2032,24 +1970,6 @@
       link.dataset.originalHtml = link.innerHTML;
     }
 
-    // REQUIRE LOGIN BEFORE BUYING (User can add to cart freely, but buying requires login)
-    const userSession = window.getCustomerSession ? window.getCustomerSession() : null;
-    if (!userSession) {
-      const checkoutMeta = resolveCheckoutMeta(link);
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-      const ext = isLocal ? '.html' : '';
-      const fallbackUrl = normalizeCheckoutUrl(href || `payment${ext}`, checkoutMeta);
-      const targetUrl = targetHref || fallbackUrl;
-
-      sessionStorage.setItem('pending_checkout_url', targetUrl);
-      if (typeof window.openAuthModal === 'function') {
-        window.openAuthModal('input');
-        if (typeof window.showAuthToast === 'function') {
-          window.showAuthToast('Please sign in to complete your purchase');
-        }
-      }
-      return;
-    }
 
     link.classList.add('btn-progress-active');
     link.innerHTML = `
@@ -2204,11 +2124,16 @@
       }
     }
 
+    const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
     const images = rawList.map(u => {
       let clean = String(u || '').trim();
       if (!clean) return '';
-      if (clean.includes('supabase.co/storage/v1/object/public/media/')) {
-        return clean.replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/');
+      if (clean.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || clean.includes('noecylfqhtfwbjfkjxoo.supabase.co')) {
+        const pathPart = clean.split('/linkadda-media/').pop() || clean.split('/media/').pop() || clean.split('/').pop();
+        return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
+      }
+      if (clean.startsWith('https://dsleaglxbedljdxrikdn.supabase.co/')) {
+        return clean;
       }
       if (/^(https?:)?\/\//i.test(clean) || clean.startsWith('data:') || clean.startsWith('blob:')) {
         return clean;
@@ -2217,14 +2142,21 @@
         return clean.startsWith('/') ? clean.substring(1) : clean;
       }
       if (clean.startsWith('products/') || clean.startsWith('categories/')) {
-        return `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/${clean}`;
+        return `${SUPABASE_CDN_ROOT}/${clean}`;
       }
-      return `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/products/${clean}`;
+      return `${SUPABASE_CDN_ROOT}/products/${clean}`;
     }).filter(Boolean);
 
     const videoList = Array.isArray(cat.videos) ? cat.videos : [];
     const videoFallback = cat.video ? [cat.video] : [];
-    const videos = [...new Set([...videoList, ...videoFallback].map(u => String(u || '').trim()).filter(Boolean))];
+    const rawVideos = [...new Set([...videoList, ...videoFallback].map(u => String(u || '').trim()).filter(Boolean))];
+    const videos = rawVideos.map(v => {
+      if (v.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || v.includes('noecylfqhtfwbjfkjxoo.supabase.co')) {
+        const pathPart = v.split('/linkadda-media/').pop() || v.split('/media/').pop() || v.split('/').pop();
+        return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
+      }
+      return v;
+    });
     return { images, videos };
   }
   window.resolveMediaList = resolveMediaList;
@@ -2516,9 +2448,9 @@
       window.showToast(nowLiked ? 'Pack saved to Liked collection ❤️' : 'Removed from Liked collection');
     }
 
-    // Persist real-time like in database for verified creator analytics
+    // Persist real-time like in database
     try {
-      fetch('/api/seller/products', {
+      fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'toggle_like', productId: pid, isLiked: nowLiked }),
@@ -3095,6 +3027,15 @@
     const badgeIconHtml = `<i class="fa-solid ${esc(badgeIconClass)}" ${badgeIconStyle}></i>`;
     const badgeHtml = customBadge ? `<div class="fk-card-badges-row"><span class="fk-card-badge-vip${badgeColorClass}" ${badgeInlineStyle}>${badgeIconHtml} ${esc(customBadge)}</span></div>` : '';
 
+    function makeCardImgHtml(imgUrl, title, isEager = false) {
+      if (!imgUrl) return '<div class="fk-card-no-img"><i class="fa-solid fa-gem"></i> VIP Pack</div>';
+      const cleanUrl = esc(imgUrl);
+      const fn = String(imgUrl || '').split('/').pop().split('?')[0];
+      const localFallback = `images/${fn}`;
+      const defaultSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'><rect width='100%' height='100%' fill='%2313121f'/><circle cx='240' cy='120' r='32' fill='%23ff2a8d' opacity='0.25'/><polygon points='234,106 254,120 234,134' fill='%23ff2a8d'/><text x='50%' y='180' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='700' text-anchor='middle'>LINKADDA VIP</text></svg>";
+      return `<img src="${cleanUrl}" alt="${esc(title)}" loading="${isEager ? 'eager' : 'lazy'}" decoding="async" draggable="false" class="fk-card-img" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}else if(!this._failedSvg){this._failedSvg=true; this.src='${defaultSvg}';}" />`;
+    }
+
     return `<div class="fk-card" data-fb-id="${esc(id)}" data-slug="${esc(cat.slug||'')}" data-product-id="${esc(id)}" id="product-${esc(id)}">
       ${badgeHtml}
       <div class="fk-card-top-actions">
@@ -3107,7 +3048,7 @@
         <div class="fk-card-slides-track">
           ${images.map((imgUrl, idx) => `
             <div class="fk-card-slide${idx === 0 ? ' is-active' : ''}" data-idx="${idx}">
-              <img src="${esc(imgUrl)}" alt="${esc(baseTitle)}" loading="${idx === 0 ? 'eager' : 'lazy'}" decoding="async" draggable="false" onerror="if(!this._failed){this._failed=true; this.src='/favicon.svg';}" />
+              ${makeCardImgHtml(imgUrl, baseTitle, idx === 0)}
             </div>
           `).join('')}
         </div>
@@ -3123,15 +3064,12 @@
       </div>
       ` : `
       <div class="fk-card-media" onclick="window.openFkProductPage('${esc(id)}')">
-        ${firstImg ? `<img src="${esc(firstImg)}" alt="${esc(baseTitle)}" loading="lazy" />` : '<div class="fk-card-no-img"><i class="fa-solid fa-film"></i> Exclusive Pack</div>'}
+        ${makeCardImgHtml(firstImg, baseTitle, false)}
         <div class="fk-card-media-gradient"></div>
         <div class="fk-card-quick-view-overlay"><i class="fa-solid fa-expand"></i> Quick View</div>
       </div>
       `}
       <div class="fk-card-body">
-        <div class="fk-card-seller-row">
-          <span class="fk-card-seller" title="Sold by ${esc(cat.sellerName || 'LinkAdda')} • Verified Creator"><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> ${esc(cat.sellerName || 'LinkAdda')}<span class="fk-seller-verified-txt"> Verified</span></span>
-        </div>
         <h3 class="fk-card-title" onclick="window.openFkProductPage('${esc(id)}')">${esc(baseTitle)}</h3>
         <div class="fk-card-rating-row">
           <span class="fk-rating-star"><i class="fa-solid fa-star"></i></span>
@@ -3166,7 +3104,7 @@
             data-inr="${cleanINR}" 
             data-usd="${cleanUSD}"
             onclick="window.handleCardBuyNow(event, this, '${esc(orderLink)}');">
-            <i class="fa-solid fa-bolt"></i> Buy
+            <i class="fa-solid fa-bolt"></i> Buy Now
           </a>
         </div>
       </div>
@@ -3555,83 +3493,58 @@
   function initCardSlideshows() {
     if (activeCardSlideshowObserver) {
       activeCardSlideshowObserver.disconnect();
+      activeCardSlideshowObserver = null;
     }
 
     const cardSlideshows = document.querySelectorAll('.fk-card-slideshow');
     if (!cardSlideshows.length) return;
 
-    if ('IntersectionObserver' in window) {
-      activeCardSlideshowObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          const mediaEl = entry.target;
-          if (entry.isIntersecting) {
-            const cardIdx = parseInt(mediaEl.dataset.cardOrder || '0', 10);
-            const stagger = 2200 + ((cardIdx % 5) * 600);
-            // Pre-warm only slide 1 for this card so it transitions instantly when timer fires
-            const slideImages = mediaEl.querySelectorAll('.fk-card-slide img');
-            if (slideImages[1] && slideImages[1].src && !slideImages[1].complete) {
-              const pre = new Image();
-              pre.src = slideImages[1].src;
-            }
-            startCardTimer(mediaEl, stagger);
-          } else {
-            stopCardTimer(mediaEl);
-          }
+    cardSlideshows.forEach((mediaEl, index) => {
+      mediaEl.dataset.cardOrder = String(index);
+
+      // Hover preview: start auto-cycling on mouse hover only
+      if (!mediaEl._hasHoverListener) {
+        mediaEl._hasHoverListener = true;
+        mediaEl.addEventListener('mouseenter', () => {
+          mediaEl._isHovered = true;
+          startCardTimer(mediaEl, 1500);
         });
-      }, { threshold: 0.15 });
+        mediaEl.addEventListener('mouseleave', () => {
+          mediaEl._isHovered = false;
+          stopCardTimer(mediaEl);
+        });
+      }
 
-      cardSlideshows.forEach((mediaEl, index) => {
-        mediaEl.dataset.cardOrder = String(index);
-        activeCardSlideshowObserver.observe(mediaEl);
+      // Mobile touch swipe listener
+      if (!mediaEl._hasTouchListener) {
+        mediaEl._hasTouchListener = true;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        mediaEl.addEventListener('touchstart', (e) => {
+          if (e.touches && e.touches[0]) {
+            touchStartX = e.touches[0].screenX;
+            touchStartY = e.touches[0].screenY;
+          }
+        }, { passive: true });
 
-        // Hover pause listeners
-        if (!mediaEl._hasHoverListener) {
-          mediaEl._hasHoverListener = true;
-          mediaEl.addEventListener('mouseenter', () => {
-            mediaEl._isHovered = true;
-          });
-          mediaEl.addEventListener('mouseleave', () => {
-            mediaEl._isHovered = false;
-          });
-        }
-
-        // Mobile touch swipe listener
-        if (!mediaEl._hasTouchListener) {
-          mediaEl._hasTouchListener = true;
-          let touchStartX = 0;
-          let touchStartY = 0;
-          mediaEl.addEventListener('touchstart', (e) => {
-            if (e.touches && e.touches[0]) {
-              touchStartX = e.touches[0].screenX;
-              touchStartY = e.touches[0].screenY;
-            }
-          }, { passive: true });
-
-          mediaEl.addEventListener('touchend', (e) => {
-            if (e.changedTouches && e.changedTouches[0]) {
-              const touchEndX = e.changedTouches[0].screenX;
-              const touchEndY = e.changedTouches[0].screenY;
-              const diffX = touchEndX - touchStartX;
-              const diffY = touchEndY - touchStartY;
-              if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
-                const cIdx = parseInt(mediaEl.dataset.activeIdx || '0', 10);
-                if (diffX < 0) {
-                  goToCardSlide(mediaEl, cIdx + 1);
-                } else {
-                  goToCardSlide(mediaEl, cIdx - 1);
-                }
-                restartCardTimer(mediaEl);
+        mediaEl.addEventListener('touchend', (e) => {
+          if (e.changedTouches && e.changedTouches[0]) {
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            if (Math.abs(diffX) > 35 && Math.abs(diffX) > Math.abs(diffY)) {
+              const cIdx = parseInt(mediaEl.dataset.activeIdx || '0', 10);
+              if (diffX < 0) {
+                goToCardSlide(mediaEl, cIdx + 1);
+              } else {
+                goToCardSlide(mediaEl, cIdx - 1);
               }
             }
-          }, { passive: true });
-        }
-      });
-    } else {
-      cardSlideshows.forEach((mediaEl, index) => {
-        const stagger = 2200 + ((index % 5) * 600);
-        startCardTimer(mediaEl, stagger);
-      });
-    }
+          }
+        }, { passive: true });
+      }
+    });
   }
 
   // -- VIEWPORT-AWARE ULTRA-FAST SLIDESHOW INIT (Zero Mobile Lag) --
@@ -3985,35 +3898,55 @@
     }
   }
 
-  // -- INSTANT LOCAL CACHED CATALOG (0ms initial load) --
-  // Priority: 1) localStorage cache (admin or v4)  2) Pre-embedded catalog snapshot  3) Wait for Firebase
+  // -- INSTANT 0ms CATALOG BOOTSTRAP (Zero Waiting, Zero Lag) --
   try {
+    const preCatalog = window.__preloadedCatalog || {};
+    if (preCatalog.products && Object.keys(preCatalog.products).length) {
+      liveCollections.products = Object.assign({}, preCatalog.products);
+    }
+    if (preCatalog.categories && Object.keys(preCatalog.categories).length) {
+      liveCollections.categories = Object.assign({}, preCatalog.categories);
+    }
+    if (preCatalog.banner && Object.keys(preCatalog.banner).length) {
+      liveCollections.banner = Object.assign({}, preCatalog.banner);
+    }
+
+    // Merge any fresher localStorage cache if it contains products
     const rawAdmin = localStorage.getItem('linkadda_cached_live_data');
     const rawV4 = localStorage.getItem('linkadda_cached_live_data_v4');
-    let source = null;
+    let localData = null;
     try {
       const pAdmin = rawAdmin ? JSON.parse(rawAdmin) : null;
       const pV4 = rawV4 ? JSON.parse(rawV4) : null;
-      if (pAdmin && pV4) {
-        source = (Number(pAdmin.timestamp || 0) >= Number(pV4.timestamp || 0)) ? pAdmin : pV4;
-      } else {
-        source = pAdmin || pV4 || (window.__preloadedCatalog || null);
+      if (pAdmin && pAdmin.products && Object.keys(pAdmin.products).length > 0) {
+        localData = pAdmin;
+      } else if (pV4 && pV4.products && Object.keys(pV4.products).length > 0) {
+        localData = pV4;
       }
-    } catch (_) {
-      source = window.__preloadedCatalog || null;
+    } catch (_) {}
+
+    if (localData) {
+      if (localData.products && Object.keys(localData.products).length >= Object.keys(liveCollections.products).length) {
+        liveCollections.products = Object.assign({}, liveCollections.products, localData.products);
+      }
+      if (localData.categories && Object.keys(localData.categories).length) {
+        liveCollections.categories = Object.assign({}, liveCollections.categories, localData.categories);
+      }
+      if (localData.banner && Object.keys(localData.banner).length) {
+        liveCollections.banner = Object.assign({}, liveCollections.banner, localData.banner);
+      }
     }
-    if (source) {
-      if (source.categories && Object.keys(source.categories).length) liveCollections.categories = source.categories;
-      if (source.products && Object.keys(source.products).length) liveCollections.products = source.products;
-      if (source.banner && Object.keys(source.banner).length) liveCollections.banner = source.banner;
-      renderCategoryFilters();
-      renderLiveGrid();
-      renderPinnedBanner();
-    }
-  } catch (_) {}
+
+    renderCategoryFilters();
+    renderLiveGrid();
+    renderPinnedBanner();
+  } catch (err) {
+    console.error('Instant boot failed:', err);
+  }
 
   function saveCachedLiveData() {
     try {
+      if (!liveCollections.products || !Object.keys(liveCollections.products).length) return;
       const payload = JSON.stringify({
         categories: liveCollections.categories,
         products: liveCollections.products,
@@ -4025,19 +3958,23 @@
     } catch (_) {}
   }
 
-  // onValue listeners below handle realtime sync including initial data load
-
-  // -- LIVE REALTIME DATA SYNC FROM FIREBASE --
+  // -- LIVE REALTIME DATA SYNC FROM FIREBASE (Never wipes out catalog if database is empty) --
   onValue(ref(db,'categories'), snap => {
-    liveCollections.categories = snap.val() || {};
-    saveCachedLiveData();
-    scheduleRenderLiveStore();
+    const val = snap.val();
+    if (val && typeof val === 'object' && Object.keys(val).length > 0) {
+      liveCollections.categories = val;
+      saveCachedLiveData();
+      scheduleRenderLiveStore();
+    }
   });
 
   onValue(ref(db,'products'), snap => {
-    liveCollections.products = snap.val() || {};
-    saveCachedLiveData();
-    scheduleRenderLiveStore();
+    const val = snap.val();
+    if (val && typeof val === 'object' && Object.keys(val).length > 0) {
+      liveCollections.products = val;
+      saveCachedLiveData();
+      scheduleRenderLiveStore();
+    }
   });
 
   // Instant cross-tab sync: updates storefront in 0ms when admin saves changes in another tab
@@ -4055,7 +3992,7 @@
   });
 
   // Fast parallel REST fetch to ensure instant fresh data even before WebSocket handshakes
-  fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/products.json?_t=${Date.now()}`, { cache: 'no-store' })
+  fetch(`https://linkadda-online-default-rtdb.firebaseio.com/products.json?_t=${Date.now()}`, { cache: 'no-store' })
     .then(r => r.json())
     .then(data => {
       if (data && typeof data === 'object' && Object.keys(data).length) {
@@ -4066,7 +4003,7 @@
     })
     .catch(() => {});
 
-  fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/categories.json?_t=${Date.now()}`, { cache: 'no-store' })
+  fetch(`https://linkadda-online-default-rtdb.firebaseio.com/categories.json?_t=${Date.now()}`, { cache: 'no-store' })
     .then(r => r.json())
     .then(data => {
       if (data && typeof data === 'object' && Object.keys(data).length) {
@@ -4085,7 +4022,7 @@
     liveCollections.settings = snap.val() || {};
   });
 
-  fetch('https://linkadda-cd1da-default-rtdb.firebaseio.com/testimonials.json')
+  fetch('https://linkadda-online-default-rtdb.firebaseio.com/testimonials.json')
     .then(r => r.json())
     .then(data => {
       if (data && typeof data === 'object') liveCollections.testimonials = data;
@@ -4396,18 +4333,23 @@
       resetOrderButtons();
     }
   });
-  window.addEventListener('load', () => {
+  let initialPositionRestored = false;
+  function handleInitialPageFocus() {
+    if (initialPositionRestored) return;
+    initialPositionRestored = true;
     resetOrderButtons();
     focusSharedProduct();
     focusSharedCategory();
     restoreReturnPosition();
-  });
-  document.addEventListener('DOMContentLoaded', () => {
-    resetOrderButtons();
-    focusSharedProduct();
-    focusSharedCategory();
-    restoreReturnPosition();
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', handleInitialPageFocus);
+    window.addEventListener('load', handleInitialPageFocus);
+  } else {
+    handleInitialPageFocus();
+  }
+
 
   document.addEventListener('click', (event) => {
     const wrap = event.target.closest('.pcard-img-wrap, .fb-slideshow');
@@ -4812,21 +4754,6 @@
     const cart = getCart();
     if (cart.length === 0) return;
 
-    // REQUIRE LOGIN BEFORE CHECKING OUT FROM CART (User can add to cart freely, but buying requires login)
-    const userSession = window.getCustomerSession ? window.getCustomerSession() : null;
-    if (!userSession) {
-      sessionStorage.setItem('pending_checkout_action', 'cart');
-      if (typeof window.closeCartDrawer === 'function') {
-        window.closeCartDrawer();
-      }
-      if (typeof window.openAuthModal === 'function') {
-        window.openAuthModal('input');
-        if (typeof window.showAuthToast === 'function') {
-          window.showAuthToast('Please sign in to proceed to checkout');
-        }
-      }
-      return;
-    }
     
     const checkoutBtn = document.getElementById('cartCheckoutBtn');
     if (checkoutBtn) {
@@ -4900,36 +4827,13 @@
   });
   document.getElementById('cartCheckoutBtn')?.addEventListener('click', checkoutCart);
 
-  // Global Add to Cart Click Delegation
+  // Global Add to Cart Click Delegation (Unified single source of truth)
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.btn-add-cart, .cpb-btn-cart');
     if (!btn) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-
-    // If already added or in-cart: directly open cart drawer!
-    if (btn.classList.contains('in-cart') || btn.classList.contains('added')) {
-      if (typeof window.openCartDrawer === 'function') {
-        window.openCartDrawer();
-      }
-      return;
+    if (typeof window.handleCardAddToCart === 'function') {
+      window.handleCardAddToCart(e, btn);
     }
-
-    const meta = extractProductMetaFromCard(btn);
-    const cart = getCart();
-    const itemId = String(meta.id) + (meta.tier ? `_${String(meta.tier).replace(/\s+/g, '')}` : '');
-    const alreadyInCart = cart.some(i => String(i.id).toLowerCase() === String(meta.id).toLowerCase() || i.cartItemId === itemId);
-    if (alreadyInCart) {
-      syncCartButtonsUI();
-      if (typeof window.openCartDrawer === 'function') {
-        window.openCartDrawer();
-      }
-      return;
-    }
-
-    addToCart(meta);
-    syncCartButtonsUI();
   });
 
   // Initial cart and wishlist badges update on page load
@@ -5575,131 +5479,7 @@
   </main>
   <!-- ===== END APP STOREFRONT VIEW ===== -->
 
-  <!-- ===== LUXURY USER AUTH MODAL ===== -->
-  <div class="auth-modal-backdrop" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
-    <div class="auth-modal-card">
-      <button type="button" class="auth-modal-close-btn" id="authModalCloseBtn" aria-label="Close modal">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
 
-      <!-- Status notification banner -->
-      <div class="auth-msg-banner" id="authMsgBanner"></div>
-
-      <!-- VIEW 1: Initial Input & Google Method View -->
-      <div class="auth-input-view" id="authInputView">
-        <div class="auth-modal-header">
-          <div class="auth-brand-badge">
-            LinkAdda <i class="fa-solid fa-crown"></i> Shop
-          </div>
-          <h2 class="auth-modal-title" id="authModalTitle">Welcome Back</h2>
-          <p class="auth-modal-subtitle">Sign in or register to manage orders & access instant downloads</p>
-        </div>
-
-        <!-- Google Sign-In Button -->
-        <button type="button" class="btn-google-auth" id="btnGoogleAuth">
-          <svg class="google-icon-svg" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-          </svg>
-          <span>Continue with Google</span>
-        </button>
-
-        <div class="auth-divider">
-          <span>or continue with email</span>
-        </div>
-
-        <!-- Email Input & Send OTP -->
-        <div class="auth-form-group">
-          <label class="auth-input-label" for="authEmailInput">Email Address</label>
-          <div class="auth-input-wrap">
-            <input type="email" id="authEmailInput" class="auth-text-input" placeholder="name@example.com" autocomplete="email" required />
-            <i class="fa-solid fa-envelope auth-input-icon"></i>
-          </div>
-        </div>
-
-        <!-- Terms & Privacy Agreement -->
-        <div class="auth-terms-row" style="display:flex;align-items:flex-start;gap:9px;margin:14px 0 16px;font-size:12px;color:#94a3b8;line-height:1.45;">
-          <input type="checkbox" id="authTermsCheckbox" checked style="accent-color:#ff2a8d;width:16px;height:16px;margin-top:2px;cursor:pointer;flex-shrink:0;" />
-          <label for="authTermsCheckbox" style="cursor:pointer;user-select:none;">
-            By continuing, I agree to LinkAdda <a href="/terms.html" target="_blank" style="color:#ff2a8d;text-decoration:none;font-weight:600;">Terms</a> &amp; <a href="/privacy.html" target="_blank" style="color:#ff2a8d;text-decoration:none;font-weight:600;">Privacy Policy</a>
-          </label>
-        </div>
-
-        <button type="button" class="btn-auth-primary" id="btnSendOtp">
-          <span>Send Verification Code</span>
-          <i class="fa-solid fa-arrow-right"></i>
-        </button>
-      </div>
-
-      <!-- VIEW 2: 6-Digit OTP Verification View -->
-      <div class="otp-view-wrap" id="authOtpView">
-        <div class="auth-modal-header">
-          <div class="auth-brand-badge">
-            LinkAdda <i class="fa-solid fa-crown"></i> Security
-          </div>
-          <h2 class="auth-modal-title">Enter 6-Digit Code</h2>
-          <p class="auth-modal-subtitle">
-            We sent a verification code to <span class="otp-target-email" id="otpTargetEmail">your email</span>
-          </p>
-        </div>
-
-        <!-- 6 Digit Input Boxes -->
-        <div class="otp-inputs-grid" id="otpInputsGrid">
-          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-box" data-index="0" autofocus />
-          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-box" data-index="1" />
-          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-box" data-index="2" />
-          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-box" data-index="3" />
-          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-box" data-index="4" />
-          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit-box" data-index="5" />
-        </div>
-
-        <div style="text-align: center; font-size: 0.78rem; color: #94a3b8; margin: -6px 0 14px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <i class="fa-regular fa-clock" style="color: #ff2a8d;"></i>
-          <span>Verification code expires in <strong style="color: #cbd5e1;">5 minutes</strong></span>
-        </div>
-
-        <div class="otp-timer-row">
-          <button type="button" class="btn-edit-email" id="btnEditEmail">
-            <i class="fa-solid fa-pen-to-square"></i> Change email
-          </button>
-          <button type="button" class="btn-resend-otp" id="btnResendOtp" disabled>
-            Resend in 60s
-          </button>
-        </div>
-
-        <button type="button" class="btn-auth-primary" id="btnVerifyOtp">
-          <span>Verify & Continue</span>
-          <i class="fa-solid fa-check"></i>
-        </button>
-      </div>
-
-      <!-- VIEW 3: Name Setup View -->
-      <div class="auth-name-view" id="authNameView">
-        <div class="auth-modal-header">
-          <div class="auth-brand-badge">
-            LinkAdda <i class="fa-solid fa-crown"></i> Shop
-          </div>
-          <h2 class="auth-modal-title">What is your name?</h2>
-          <p class="auth-modal-subtitle">Enter your name for personalized orders and downloads</p>
-        </div>
-
-        <div class="auth-form-group">
-          <label class="auth-input-label" for="authSetupNameInput">Your Full Name</label>
-          <div class="auth-input-wrap">
-            <input type="text" id="authSetupNameInput" class="auth-text-input" placeholder="e.g. Hardik Patel" autofocus />
-            <i class="fa-solid fa-user auth-input-icon"></i>
-          </div>
-        </div>
-
-        <button type="button" class="btn-auth-primary" id="btnSaveSetupName">
-          <span>Save & Continue</span>
-          <i class="fa-solid fa-check"></i>
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ===== FULL-SCREEN NATIVE E-COMMERCE PROFILE PAGE ===== -->
   <!-- ===== FULL-PAGE NATIVE E-COMMERCE ACCOUNT VIEW (LINKADDA NATIVE STANDARD) ===== -->
@@ -5711,7 +5491,7 @@
         <span>Store</span>
       </button>
       <div class="app-screen-title-group">
-        <h1 class="app-screen-title">My Account</h1>
+        <h1 class="app-screen-title"><i class="fa-solid fa-gear" style="color: #ff2a8d; margin-right: 6px;"></i> Settings</h1>
       </div>
       <div class="app-screen-top-actions">
         <button type="button" class="btn-app-screen-icon" id="btnTopAccountNotif" onclick="window.showNotificationsPage ? window.showNotificationsPage('profile') : (window.location.hash = '#notifications')" aria-label="Notifications" title="Notifications">
@@ -5728,120 +5508,38 @@
     <!-- Account Page Container (Responsive 2-Column Desktop Grid / 1-Column Mobile Flow) -->
     <div class="app-profile-container">
       
-      <!-- ━━ COLUMN A: Profile Identity, Settings & Support Sidebar (Sticky on PC) ━━ -->
+      <!-- ━━ COLUMN A: Store Settings & Quick Controls Sidebar ━━ -->
       <div class="profile-col-sidebar">
-
-        <!-- 1. Premium Customer Identity Card -->
-        <div class="profile-hero-card">
-          <!-- Centered Avatar with Glow -->
-          <div class="profile-hero-center">
-            <div class="profile-avatar-wrapper" id="profileAvatarWrap">
-              <div class="profile-avatar-disc" id="profileAvatarDisc">
-                <span class="profile-avatar-initials" id="profileAvatarInitials"><i class="fa-solid fa-crown"></i></span>
-              </div>
-              <div class="profile-avatar-status-badge" id="profileAvatarStatus" title="Verified Customer">
-                <i class="fa-solid fa-circle-check"></i>
-              </div>
+        <div class="account-section-card" style="padding: 22px 20px; border-radius: 20px; background: rgba(18, 14, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, rgba(255,42,141,0.2), rgba(139,92,246,0.25)); border: 1px solid rgba(255,42,141,0.4); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #ff2a8d; flex-shrink: 0;">
+              <i class="fa-solid fa-gear"></i>
             </div>
-
-            <!-- Name + Edit -->
-            <div class="profile-hero-name-wrap">
-              <h2 class="profile-greeting-title"><span id="profileGreetingName">Customer</span></h2>
-              <button type="button" class="btn-name-edit-inline" id="btnEditProfileName" onclick="window.openEditProfileModal && window.openEditProfileModal()" title="Edit Profile" aria-label="Edit Profile">
-                <i class="fa-solid fa-user-pen"></i>
-              </button>
-            </div>
-
-            <!-- Single Verified Member Badge (Only 1 instance, no duplicate subtitle!) -->
-            <div class="profile-status-wrap">
-              <span class="profile-single-verified-badge" id="profileVerifiedBadge" style="display: none;">
-                <i class="fa-solid fa-circle-check"></i> Verified Member
-              </span>
-              <!-- Subtitle used strictly for Guest when logged out -->
-              <p class="profile-member-status" id="profileDisplaySubtitle" style="display: none;"></p>
-              <p class="profile-email-text" id="profileDisplayEmail" style="display: none;"></p>
-            </div>
-
-            <!-- Single Joined Date (Only 1 instance) -->
-            <div class="profile-joined-text" id="profileJoinedText" style="display: none;">
-              <i class="fa-regular fa-calendar-check"></i> Member since <span id="profileJoinedDateText">16 September</span>
+            <div>
+              <h2 style="font-size: 1.15rem; font-weight: 850; color: #ffffff; margin: 0; letter-spacing: -0.2px;">Settings & Preferences</h2>
+              <p style="font-size: 0.8rem; color: #94a3b8; margin: 3px 0 0;">Manage display theme, store currency & receipts</p>
             </div>
           </div>
-
-          <!-- Account ID + Feature Pills -->
-          <div class="profile-hero-badges">
-            <div class="profile-id-badge-group">
-              <span class="profile-pill-badge id-pill" id="profileDisplayId">#LA-STORE</span>
-              <button type="button" class="btn-copy-id-chip" id="btnCopyProfileId" onclick="window.copyProfileAccountId && window.copyProfileAccountId()" title="Copy Account ID" aria-label="Copy Account ID">
-                <i class="fa-regular fa-copy"></i>
-                <span class="copy-id-label">Copy</span>
-              </button>
-            </div>
-            <span class="profile-pill-badge access-pill">
-              <i class="fa-solid fa-bolt"></i> Instant Access
+          <div style="display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;">
+            <span style="font-size: 0.72rem; font-weight: 750; padding: 4px 10px; border-radius: 9999px; background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); display: inline-flex; align-items: center; gap: 5px;">
+              <i class="fa-solid fa-circle-check"></i> Instant Delivery
+            </span>
+            <span style="font-size: 0.72rem; font-weight: 750; padding: 4px 10px; border-radius: 9999px; background: rgba(255,42,141,0.15); color: #ff65a3; border: 1px solid rgba(255,42,141,0.3); display: inline-flex; align-items: center; gap: 5px;">
+              <i class="fa-solid fa-bolt"></i> 1-Tap Checkout
             </span>
           </div>
-
-          <!-- Strictly hidden compatibility anchor -->
-          <div style="display: none !important;" aria-hidden="true">
-            <span id="profileJoinedBadge"><span id="profileJoinedDatePill"></span></span>
-          </div>
-
-          <!-- Guest Sign-In Invitation Box (Visible when not logged in) -->
-          <div id="profileGuestCtaWrap" class="profile-guest-cta-box" style="display: none;">
-            <div class="guest-cta-benefits">
-              <div class="guest-benefit-item"><i class="fa-solid fa-check"></i> <span>Instant access to purchased packs & downloads</span></div>
-              <div class="guest-benefit-item"><i class="fa-solid fa-check"></i> <span>Lifetime order history & cloud synchronization</span></div>
-              <div class="guest-benefit-item"><i class="fa-solid fa-check"></i> <span>Exclusive member deals & Telegram priority support</span></div>
-            </div>
-            <button type="button" class="btn-profile-login-cta" onclick="window.openAuthModal && window.openAuthModal('input')">
-              <i class="fa-solid fa-arrow-right-to-bracket"></i>
-              <span>Sign In / Create Account</span>
-            </button>
+          <!-- Hidden legacy identity hooks to prevent JS errors -->
+          <div style="display: none !important;">
+            <span id="profileAvatarInitials"></span>
+            <span id="profileAvatarStatus"></span>
+            <span id="profileGreetingName"></span>
+            <span id="profileVerifiedBadge"></span>
+            <span id="profileDisplaySubtitle"></span>
+            <span id="profileDisplayEmail"></span>
+            <span id="profileDisplayId">#LA-STORE</span>
+            <button id="btnCopyProfileId"></button>
           </div>
         </div>
-
-        <!-- 4. Sign Out & Account Controls -->
-        <div id="profileLogoutWrap" class="profile-logout-box" style="margin-top: 6px;">
-          <button type="button" class="btn-profile-logout" id="profileLogoutBtn">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i>
-            <span>Sign Out of Account</span>
-          </button>
-
-          <!-- Delete Account (Disabled / Coming Soon) -->
-          <div class="profile-delete-account-disabled" id="profileDeleteAccountWrap" title="Account deletion is coming soon" aria-disabled="true">
-            <div class="delete-account-content">
-              <i class="fa-regular fa-trash-can"></i>
-              <span>Delete Account</span>
-            </div>
-            <span class="badge-coming-soon">Coming Soon</span>
-          </div>
-        </div>
-
-        <!-- ━━ LOGOUT CONFIRMATION MODAL ━━ -->
-        <div id="logoutConfirmModal" class="logout-confirm-overlay" style="display: none;">
-          <div class="logout-confirm-backdrop" onclick="window.closeLogoutModal && window.closeLogoutModal()"></div>
-          <div class="logout-confirm-card">
-            <div class="logout-confirm-icon-wrap">
-              <div class="logout-confirm-icon-circle">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-              </div>
-            </div>
-            <h3 class="logout-confirm-title">Sign Out?</h3>
-            <p class="logout-confirm-desc">Are you sure you want to sign out of your LinkAdda account? You can always sign back in anytime.</p>
-            <div class="logout-confirm-actions">
-              <button type="button" class="btn-logout-cancel" id="btnLogoutCancel" onclick="window.closeLogoutModal && window.closeLogoutModal()">
-                <i class="fa-solid fa-xmark"></i>
-                <span>Cancel</span>
-              </button>
-              <button type="button" class="btn-logout-confirm" id="btnLogoutConfirm" onclick="window.confirmLogout && window.confirmLogout()">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                <span>Yes, Sign Out</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <!-- ━━ COLUMN B: Quick Hub Matrix & Orders Activity Center ━━ -->
@@ -5894,26 +5592,7 @@
           </a>
         </div>
 
-        <!-- LinkAdda Creator & Seller Hub Card (Protected: Visible Only for Logged-In Members) -->
-        <div class="profile-seller-card" id="profileSellerSection" style="display: none;">
-          <div class="seller-card-badge-row">
-            <span class="seller-gold-tag"><i class="fa-solid fa-crown"></i> Content Partner Program</span>
-            <span class="seller-status-indicator" id="profileSellerStatusIndicator" style="display: none;"></span>
-          </div>
-          <h3 class="seller-card-title" id="profileSellerTitle">Become a LinkAdda Seller</h3>
-          <p class="seller-card-desc" id="profileSellerDesc">
-            Monetize your exclusive Mega & Google Drive collections, viral Telegram packs, and private vaults. Earn 100% creator share settled within 7 days of verified customer purchase.
-          </p>
-          <div class="seller-card-action-wrap">
-            <a href="/seller" id="profileSellerActionBtn" class="btn-profile-seller-action">
-              <span id="profileSellerBtnText">Become a Seller</span>
-              <i class="fa-solid fa-arrow-right" id="profileSellerBtnIcon"></i>
-            </a>
-            <a href="/seller/login" id="profileSellerLoginLink" class="seller-login-sublink">
-              Already approved? Seller Login →
-            </a>
-          </div>
-        </div>
+
 
         <!-- 2. App Settings & Preferences -->
         <div class="account-section-card app-settings-card">
@@ -6006,18 +5685,7 @@
               <i class="fa-solid fa-chevron-right opt-chevron"></i>
             </a>
 
-            <a href="/seller" class="profile-option-item">
-              <div class="profile-option-left">
-                <div class="profile-opt-icon-wrap" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
-                  <i class="fa-solid fa-crown"></i>
-                </div>
-                <div class="profile-option-text">
-                  <strong class="opt-title">Creator Partner Hub</strong>
-                  <span class="opt-sub">Sell digital packs & earn 100% via 7-day UPI</span>
-                </div>
-              </div>
-              <i class="fa-solid fa-chevron-right opt-chevron"></i>
-            </a>
+
 
             <a href="about.html#faq" class="profile-option-item">
               <div class="profile-option-left">
@@ -6064,49 +5732,7 @@
 
     </div>
 
-    <!-- Edit Profile Modal (Name + Email + Joined Date) -->
-    <div id="appEditProfileModal" class="la-auth-modal" style="display: none;">
-      <div class="la-auth-overlay" onclick="window.closeEditProfileModal && window.closeEditProfileModal()"></div>
-      <div class="la-auth-card edit-profile-card">
-        <div class="la-auth-header">
-          <div class="la-auth-title-wrap">
-            <h3 class="la-auth-title"><i class="fa-solid fa-user-pen" style="color: #ff2a8d; margin-right: 8px;"></i> Edit Profile</h3>
-            <p class="la-auth-sub">Update your account full name and email address</p>
-          </div>
-          <button type="button" class="btn-auth-close" onclick="window.closeEditProfileModal && window.closeEditProfileModal()" aria-label="Close">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-        <div class="edit-profile-form">
-          <div class="edit-profile-field">
-            <label for="editProfileNameInput" class="edit-profile-label">Full Name</label>
-            <div class="edit-profile-input-wrap">
-              <i class="fa-solid fa-user edit-input-icon"></i>
-              <input type="text" id="editProfileNameInput" class="edit-profile-input" placeholder="Enter your full name" maxlength="40" autocomplete="name" />
-            </div>
-          </div>
-          <div class="edit-profile-field">
-            <label for="editProfileEmailInput" class="edit-profile-label">Email Address</label>
-            <div class="edit-profile-input-wrap">
-              <i class="fa-solid fa-envelope edit-input-icon"></i>
-              <input type="email" id="editProfileEmailInput" class="edit-profile-input" placeholder="name@example.com" maxlength="80" autocomplete="email" />
-            </div>
-          </div>
-          <div class="edit-profile-joined-info" id="editProfileJoinedInfo">
-            <i class="fa-regular fa-calendar-check" style="color: #ff2a8d;"></i>
-            <span>Joined on <strong id="editProfileJoinedDate">16 September 2026</strong></span>
-          </div>
-          <div id="editProfileFeedback" class="edit-profile-feedback"></div>
-          <div class="edit-profile-actions">
-            <button type="button" class="btn-cancel-edit" onclick="window.closeEditProfileModal && window.closeEditProfileModal()">Cancel</button>
-            <button type="button" class="btn-save-profile-full" id="btnSaveFullProfile">
-              <i class="fa-solid fa-floppy-disk"></i>
-              <span>Save Changes</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+
   </div>
 
   <!-- ===== LINKADDA MOBILE STICKY APP BAR (5 NATIVE TABS - PERSISTENT ACROSS APP) ===== -->
@@ -6129,9 +5755,9 @@
       <span class="fk-appbar-badge" id="fkAppbarCartBadge" style="display:none;">0</span>
       <span>Cart</span>
     </button>
-    <button type="button" class="fk-appbar-item" id="appbarAccountBtn" aria-label="My Account" onclick="window.showProfilePage ? window.showProfilePage() : (window.location.hash = '#profile')">
-      <i class="fa-solid fa-circle-user" id="appbarAccountIcon"></i>
-      <span id="appbarAccountLabel">Account</span>
+    <button type="button" class="fk-appbar-item" id="appbarAccountBtn" aria-label="Settings" onclick="window.showProfilePage ? window.showProfilePage() : (window.location.hash = '#settings')">
+      <i class="fa-solid fa-gear" id="appbarAccountIcon"></i>
+      <span id="appbarAccountLabel">Settings</span>
     </button>
   </nav>
 
@@ -6167,7 +5793,7 @@
 
       <!-- Live Dynamic Notifications Feed -->
       <div class="notif-page-list" id="notifPageList">
-        <!-- Injected dynamically via auth-modal.js with welcome notification on login! -->
+        <!-- Injected dynamically via auth-modal.js with order notifications -->
       </div>
     </div>
   </div>

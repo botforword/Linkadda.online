@@ -1124,23 +1124,26 @@ body.linkadda-store {
 /* ===== APPLE DESIGN SYSTEM: PRODUCT CARDS & BUTTONS (DESKTOP & BASE) ===== */
 .fk-card {
   position: relative;
-  background: rgba(18, 17, 28, 0.72);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: #12111d;
+  background: linear-gradient(180deg, #171527 0%, #0e0d19 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 22px;
+  border-radius: 20px;
   overflow: hidden;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.28s ease;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  content-visibility: auto;
+  contain-intrinsic-size: 380px;
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .fk-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(225, 29, 72, 0.32);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 24px rgba(225, 29, 72, 0.16);
+  transform: translateY(-4px) translateZ(0);
+  border-color: rgba(255, 42, 141, 0.45);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 42, 141, 0.22);
 }
 
 /* Top Actions Container (Share + Wishlist) */
@@ -5296,4 +5299,239 @@ body.linkadda-store {
     -webkit-backdrop-filter: blur(8px) !important;
   }
 }
+
+/* ==========================================================================
+   APPLE STORE PREMIUM DESIGN SYSTEM (E-COMMERCE APP EXPERIENCE)
+   - Refined SF Pro / Inter Typography & crisp anti-aliasing
+   - High-Def Apple Glassmorphism (28px Blur + Saturation)
+   - Precision 1px Hairline Micro-Borders & Diffuse Ambient Shadows
+   - Continuous Squircle Curvature (20px Cards, 14px Media, Pill Badges)
+   - Spring Tactile Micro-Interactions (cubic-bezier(0.16, 1, 0.3, 1))
+   - iOS Tab Bar Dock & Native App Feel
+   ========================================================================== */
+
+/* Universal Apple Typography & Subpixel Rendering */
+body.fk-mode,
+body.linkadda-store,
+.fk-header,
+.fk-card,
+.fk-mobile-appbar,
+.auth-modal-card {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Outfit", "Inter", -system-ui, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+}
+
+/* Tabular numbers for clean financial / pricing alignment */
+.fk-card-price,
+.fk-card-price-inr,
+.pcard-price,
+.vid-tier-price,
+.stat-num,
+.cart-total-val,
+.cart-item-price {
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.015em !important;
+}
+
+/* Apple Squircle Product Cards */
+.fk-card,
+.pcard {
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(17, 16, 27, 0.85) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.35), 0 16px 36px -6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease !important;
+}
+
+.fk-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(244, 63, 94, 0.35) !important;
+  box-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.45), 0 20px 48px -6px rgba(244, 63, 94, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.fk-card:active {
+  transform: scale(0.985) !important;
+}
+
+/* Light Mode Apple Card Elevation */
+[data-theme="light"] .fk-card,
+[data-theme="light"] .pcard {
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04), 0 12px 28px -4px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="light"] .fk-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(225, 29, 72, 0.3) !important;
+  box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.08), 0 18px 40px -6px rgba(225, 29, 72, 0.14) !important;
+}
+
+/* Apple Media Containers with Precision Inner Bevel */
+.fk-card-media {
+  border-radius: 15px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+.fk-card-media img {
+  border-radius: 15px !important;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.fk-card:hover .fk-card-media img {
+  transform: scale(1.035) !important;
+}
+
+/* Apple Store Primary CTA Buttons ("Instant Access" / "Buy Now") */
+.fk-card-buy-btn,
+.fk-btn-buy-action,
+.btn-order-now,
+.btn-auth-primary {
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.25px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.fk-card-buy-btn:hover,
+.fk-btn-buy-action:hover,
+.btn-order-now:hover,
+.btn-auth-primary:hover {
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 20px rgba(244, 63, 94, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  filter: brightness(1.05) !important;
+}
+
+.fk-card-buy-btn:active,
+.fk-btn-buy-action:active,
+.btn-order-now:active,
+.btn-auth-primary:active {
+  transform: scale(0.96) !important;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.25) !important;
+}
+
+/* Apple Frosted Floating Top Bar */
+.fk-header {
+  backdrop-filter: blur(30px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="light"] .fk-header {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Apple Search Input Pill */
+.fk-search-input {
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.fk-search-input:focus {
+  border-color: rgba(244, 63, 94, 0.65) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.18), inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="light"] .fk-search-input {
+  border: 1px solid #e2e8f0 !important;
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .fk-search-input:focus {
+  border-color: #e11d48 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.14) !important;
+}
+
+/* Apple Frosted Glass Category Strip */
+.fk-category-strip,
+.fk-cat-strip-wrap {
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="light"] .fk-category-strip,
+[data-theme="light"] .fk-cat-strip-wrap {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.fk-cat-thumb-wrapper {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+
+.fk-cat-item:active .fk-cat-thumb-wrapper {
+  transform: scale(0.93) !important;
+}
+
+/* Apple iOS Native Sticky Bottom Bar (Dock Feel) */
+@media (max-width: 768px) {
+  .fk-mobile-appbar {
+    height: 62px !important;
+    background: rgba(12, 10, 20, 0.88) !important;
+    backdrop-filter: blur(30px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  [data-theme="light"] .fk-mobile-appbar {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.07) !important;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .fk-appbar-item {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .fk-appbar-item:active {
+    transform: scale(0.92) !important;
+  }
+
+  .fk-appbar-item.active i {
+    transform: scale(1.1) !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+}
+
+/* Apple VIP Frosted Badges */
+.fk-card-badge-vip,
+.fk-verified-badge,
+.auth-brand-badge {
+  border-radius: 9999px !important;
+  backdrop-filter: blur(18px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  letter-spacing: 0.35px !important;
+}
+
+/* Crisp Apple Modal Dialogs & Sheets */
+.auth-modal-card,
+.fk-details-modal-card {
+  border-radius: 26px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(32px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
 

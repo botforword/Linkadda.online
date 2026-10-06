@@ -82,6 +82,9 @@ out/
 
 # Local dev scratch files
 scratch/
+scratch*
+scratch_*.mjs
 migration-report.json
 migration-report.md
+
 

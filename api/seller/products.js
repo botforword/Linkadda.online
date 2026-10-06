@@ -1,7 +1,7 @@
 import { handleCors, getAuthSecret, getFirebaseAdminToken, verifyAdminRequest, getClientIp, SELLER_MEMORY_STORE } from '../_utils.js';
 import { verifySellerToken } from './auth.js';
 
-const RTDB_URL = 'https://linkadda-cd1da-default-rtdb.firebaseio.com';
+const RTDB_URL = 'https://linkadda-online-default-rtdb.firebaseio.com';
 
 const engagementRateLimitMap = new Map();
 function isEngagementRateLimited(ip) {

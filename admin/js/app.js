@@ -727,11 +727,13 @@ function renderMediaFallback(label = 'No image selected') {
 
 function resolveAdminMediaUrl(url) {
   let clean = String(url || '').trim();
+  const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
   if (!clean) return '';
+  if (clean.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || clean.includes('noecylfqhtfwbjfkjxoo.supabase.co')) {
+    const pathPart = clean.split('/linkadda-media/').pop() || clean.split('/media/').pop() || clean.split('/').pop();
+    return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
+  }
   if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('data:') || clean.startsWith('blob:')) {
-    if (clean.includes('supabase.co/storage/v1/object/public/media/')) {
-      return clean.replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/');
-    }
     return clean;
   }
   if (clean.startsWith('/')) {
@@ -741,9 +743,9 @@ function resolveAdminMediaUrl(url) {
     return `/${clean}`;
   }
   if (clean.startsWith('products/') || clean.startsWith('categories/')) {
-    return `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/${clean}`;
+    return `${SUPABASE_CDN_ROOT}/${clean}`;
   }
-  return `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/products/${clean}`;
+  return `${SUPABASE_CDN_ROOT}/products/${clean}`;
 }
 
 function normalizeProductMedia(record = {}) {
@@ -3618,12 +3620,10 @@ function resolveMediaSource(value) {
   let raw = String(value || '').trim();
   if (!raw) return '';
   
-  if (raw.includes('supabase.co/storage/v1/object/public/media/')) {
-    raw = raw.replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/');
-  }
-  if (raw.includes('s3.linkadda.shop/linkadda-media/')) {
-    raw = raw.replace('https://s3.linkadda.shop/linkadda-media', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media')
-             .replace('http://s3.linkadda.shop/linkadda-media', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media');
+  const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
+  if (raw.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || raw.includes('noecylfqhtfwbjfkjxoo.supabase.co') || raw.includes('s3.linkadda.shop/linkadda-media')) {
+    const pathPart = raw.split('/linkadda-media/').pop() || raw.split('/media/').pop() || raw.split('/').pop();
+    return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
   }
 
   if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
@@ -3632,22 +3632,19 @@ function resolveMediaSource(value) {
   const match = listCollection('media').find((item) => mediaMatchesReference(item, normalized) || mediaMatchesReference(item, raw));
   if (match?.publicUrl) {
     let u = match.publicUrl;
-    if (u.includes('supabase.co/storage/v1/object/public/media/')) {
-      u = u.replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/');
-    }
-    if (u.includes('s3.linkadda.shop/linkadda-media/')) {
-      u = u.replace('https://s3.linkadda.shop/linkadda-media', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media')
-           .replace('http://s3.linkadda.shop/linkadda-media', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media');
+    if (u.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || u.includes('noecylfqhtfwbjfkjxoo.supabase.co') || u.includes('s3.linkadda.shop/linkadda-media')) {
+      const pathPart = u.split('/linkadda-media/').pop() || u.split('/media/').pop() || u.split('/').pop();
+      return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
     }
     return u;
   }
   if (raw.startsWith('products/') || raw.startsWith('categories/') || raw.startsWith('logos/') || raw.startsWith('hero/') || raw.startsWith('banners/') || raw.startsWith('testimonials/')) {
-    return `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/${raw}`;
+    return `${SUPABASE_CDN_ROOT}/${raw}`;
   }
   if (raw.startsWith('images/') || raw.startsWith('/images/')) {
     return raw.startsWith('/') ? raw : `/${raw}`;
   }
-  return `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/products/${raw.replace(/^\/+/, '')}`;
+  return `${SUPABASE_CDN_ROOT}/products/${raw.replace(/^\/+/, '')}`;
 }
 
 function mediaPreview(item) {
@@ -5288,7 +5285,7 @@ function renderSingleEditorPage(node, schema, data = {}) {
                   <span style="font-size: 11px; color: var(--muted);">${escapeHtml(record.status === 'hidden' ? '⚠️ Hidden' : '🟢 Active')}</span>
                 </div>
                 <h3 style="font-size: 18px; font-weight: 800; color: var(--text); margin: 0 0 8px 0; line-height: 1.3;">
-                  ${escapeHtml(record.title || 'Welcome to Linkadda Shop')}
+                  ${escapeHtml(record.title || 'Welcome to Linkadda Online')}
                 </h3>
                 <p style="font-size: 12.5px; color: var(--muted); margin: 0 0 16px 0; line-height: 1.4;">
                   ${escapeHtml(record.subtitle || 'High quality products & instant digital access.')}
@@ -6275,7 +6272,7 @@ function renderSettingsManagementView(data = {}, fullData = {}) {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;">
             <div>
               <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em;">Store / Website Name</label>
-              <input type="text" name="siteName" value="${escapeHtml(settings.siteName || 'Linkadda Shop')}" class="input" style="width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;" placeholder="e.g. Linkadda Shop" required />
+              <input type="text" name="siteName" value="${escapeHtml(settings.siteName || 'Linkadda Online')}" class="input" style="width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;" placeholder="e.g. Linkadda Online" required />
               <small style="display: block; color: var(--muted); font-size: 11px; margin-top: 4px;">Shown in navbar and browser tab.</small>
             </div>
 
@@ -6304,7 +6301,7 @@ function renderSettingsManagementView(data = {}, fullData = {}) {
 
             <div style="grid-column: 1 / -1;">
               <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em;">Footer Copyright & Notice</label>
-              <textarea name="footer" rows="2" class="textarea" style="width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; resize: vertical;" placeholder="e.g. © 2026 Linkadda Shop. All rights reserved.">${escapeHtml(settings.footer || '© 2026 Linkadda.Shop. All rights reserved.')}</textarea>
+              <textarea name="footer" rows="2" class="textarea" style="width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; resize: vertical;" placeholder="e.g. © 2026 Linkadda Online. All rights reserved.">${escapeHtml(settings.footer || '© 2026 Linkadda.Online. All rights reserved.')}</textarea>
               <small style="display: block; color: var(--muted); font-size: 11px; margin-top: 4px;">Displayed at the bottom of every page.</small>
             </div>
           </div>
@@ -6332,7 +6329,7 @@ function renderSettingsManagementView(data = {}, fullData = {}) {
 
             <div>
               <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em;">Support Email</label>
-              <input type="email" name="email" value="${escapeHtml(settings.email || currentEmail)}" class="input" style="width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;" placeholder="support@linkadda.shop" />
+              <input type="email" name="email" value="${escapeHtml(settings.email || currentEmail)}" class="input" style="width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;" placeholder="support@linkadda.online" />
             </div>
 
             <div>
@@ -6730,7 +6727,7 @@ function renderPaymentManagementView(data = {}, fullData = {}) {
         </div>
       </section>
 
-      ${renderFieldGroup('Active Payment Methods (Linkadda Shop Connected)', 'Configure payment methods shown to customers on checkout. Upload brand logos, scanner QR codes, or set recommended.', `
+      ${renderFieldGroup('Active Payment Methods (Linkadda Online Connected)', 'Configure payment methods shown to customers on checkout. Upload brand logos, scanner QR codes, or set recommended.', `
         <div class="payment-methods-grid">
           ${methodsList.map((m) => `
             <div class="payment-card ${m.isRecommended ? 'is-recommended' : ''} ${m.status !== 'active' ? 'is-disabled' : ''}">
@@ -10053,7 +10050,7 @@ function attachGlobalHandlers() {
                 <h1 style="color: #ff2a8d; margin-top: 0;">Welcome to LinkAdda, ${escapeHtml(storeName)}!</h1>
                 <p style="color: #cbd5e1; line-height: 1.5;">Your digital content partner application has been approved by LinkAdda Admin. You can now log into your Seller Hub, list exclusive packs, and track your 100% payouts.</p>
                 <div style="background: #181426; padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid rgba(255,42,141,0.3);">
-                  <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 13px;">Login Portal: <a href="https://linkadda.shop/seller/login" style="color: #ff2a8d; font-weight: 700;">linkadda.shop/seller/login</a></p>
+                  <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 13px;">Login Portal: <a href="https://linkadda.online/seller/login" style="color: #ff2a8d; font-weight: 700;">linkadda.online/seller/login</a></p>
                   <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 13px;">Email: <strong style="color: #fff;">${escapeHtml(sellerEmail)}</strong></p>
                   <p style="margin: 0; color: #94a3b8; font-size: 13px;">Temporary Password: <code style="color: #fbbf24; font-size: 16px; font-weight: 800;">${escapeHtml(tempPassword)}</code></p>
                 </div>
@@ -10090,8 +10087,8 @@ function attachGlobalHandlers() {
       } catch (_) {}
 
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const portalUrl = isLocalhost ? `${window.location.origin}/seller/login` : 'https://linkadda.shop/seller/login';
-      const portalLabel = isLocalhost ? `${window.location.host}/seller/login` : 'linkadda.shop/seller/login';
+      const portalUrl = isLocalhost ? `${window.location.origin}/seller/login` : 'https://linkadda.online/seller/login';
+      const portalLabel = isLocalhost ? `${window.location.host}/seller/login` : 'linkadda.online/seller/login';
 
       // Open Success Credentials Modal with direct 1-click copy & profile view
       openModal(`
@@ -11016,7 +11013,7 @@ function attachGlobalHandlers() {
                   Direct URL: <a href="${escapeHtml(productLink)}" style="color: #38bdf8; word-break: break-all;">${escapeHtml(productLink)}</a>
                 </p>
                 <div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 24px; padding-top: 16px; text-align: center;">
-                  <p style="color: #64748b; font-size: 11px; margin: 0;">&copy; ${new Date().getFullYear()} LinkAdda Shop &bull; 24/7 VIP Support: @TRUSTED_BROTHER1234</p>
+                  <p style="color: #64748b; font-size: 11px; margin: 0;">&copy; ${new Date().getFullYear()} LinkAdda Online &bull; 24/7 VIP Support: @TRUSTED_BROTHER1234</p>
                 </div>
               </div>
             `
@@ -11072,7 +11069,7 @@ function attachGlobalHandlers() {
                   100% of this sale amount has been approved and credited to your seller account for 7-day rolling automated UPI payout.
                 </p>
                 <div style="text-align: center; margin-top: 24px;">
-                  <a href="https://linkadda.shop/seller/dashboard" target="_blank" style="background: linear-gradient(135deg, #ff2a8d, #ff5e36); color: #ffffff; padding: 12px 24px; border-radius: 10px; font-weight: 800; font-size: 13.5px; text-decoration: none; display: inline-block;">
+                  <a href="https://linkadda.online/seller/dashboard" target="_blank" style="background: linear-gradient(135deg, #ff2a8d, #ff5e36); color: #ffffff; padding: 12px 24px; border-radius: 10px; font-weight: 800; font-size: 13.5px; text-decoration: none; display: inline-block;">
                     Open Seller Dashboard
                   </a>
                 </div>
@@ -11451,7 +11448,7 @@ function attachGlobalHandlers() {
       const formData = new FormData(form);
       const nextSettings = {
         ...(ui.data?.settings || {}),
-        siteName: (formData.get('siteName') || '').trim() || 'Linkadda Shop',
+        siteName: (formData.get('siteName') || '').trim() || 'Linkadda Online',
         logo: (formData.get('logo') || '').trim(),
         favicon: (formData.get('favicon') || '').trim(),
         telegram: (formData.get('telegram') || '').trim(),

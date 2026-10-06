@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { handleCors, getClientIp, isValidEmail, getFirebaseAdminToken, SELLER_MEMORY_STORE } from '../_utils.js';
 
-const RTDB_URL = 'https://linkadda-cd1da-default-rtdb.firebaseio.com';
+const RTDB_URL = 'https://linkadda-online-default-rtdb.firebaseio.com';
 
 const applyIpRateLimitMap = globalThis.__LINKADDA_APPLY_IP_MAP || (globalThis.__LINKADDA_APPLY_IP_MAP = new Map());
 const APPLY_WINDOW_MS = 60 * 60 * 1000; // 1 hour window

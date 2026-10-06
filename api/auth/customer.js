@@ -42,7 +42,7 @@ export async function fetchCustomerRecord(uid, token) {
 
   // 1. Try standard /customers/ node
   try {
-    const res = await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/customers/${encodeURIComponent(uid)}.json${authQuery}`);
+    const res = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/customers/${encodeURIComponent(uid)}.json${authQuery}`);
     if (res.ok) {
       const data = await res.json();
       if (data && !data.error && data.email) return data;
@@ -51,7 +51,7 @@ export async function fetchCustomerRecord(uid, token) {
 
   // 2. Try guaranteed /events/customers/ node
   try {
-    const res = await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/events/customers/${encodeURIComponent(uid)}.json${authQuery}`);
+    const res = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/events/customers/${encodeURIComponent(uid)}.json${authQuery}`);
     if (res.ok) {
       const data = await res.json();
       if (data && !data.error && data.email) return data;
@@ -67,7 +67,7 @@ export async function fetchAllCustomers(token) {
 
   // 1. Read from /events/customers
   try {
-    const res = await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/events/customers.json${authQuery}`);
+    const res = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/events/customers.json${authQuery}`);
     if (res.ok) {
       const data = await res.json();
       if (data && typeof data === 'object') {
@@ -85,7 +85,7 @@ export async function fetchAllCustomers(token) {
 
   // 2. Read from /customers
   try {
-    const res = await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/customers.json${authQuery}`);
+    const res = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/customers.json${authQuery}`);
     if (res.ok) {
       const data = await res.json();
       if (data && typeof data === 'object') {
@@ -112,7 +112,7 @@ export async function saveCustomerRecord(uid, customer, token) {
 
   // 1. Save to /events/customers/ (guaranteed permitted on active RTDB)
   try {
-    const res = await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/events/customers/${encodeURIComponent(uid)}.json${authQuery}`, {
+    const res = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/events/customers/${encodeURIComponent(uid)}.json${authQuery}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(customer),
@@ -127,7 +127,7 @@ export async function saveCustomerRecord(uid, customer, token) {
 
   // 2. Also save to standard /customers/ (when database.rules.json is active)
   try {
-    await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/customers/${encodeURIComponent(uid)}.json${authQuery}`, {
+    await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/customers/${encodeURIComponent(uid)}.json${authQuery}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(customer),
@@ -140,12 +140,12 @@ export async function saveCustomerRecord(uid, customer, token) {
 export async function deleteCustomerRecord(uid, token) {
   const authQuery = token ? `?auth=${encodeURIComponent(token)}` : '';
   try {
-    await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/events/customers/${encodeURIComponent(uid)}.json${authQuery}`, {
+    await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/events/customers/${encodeURIComponent(uid)}.json${authQuery}`, {
       method: 'DELETE',
     });
   } catch (_) {}
   try {
-    await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/customers/${encodeURIComponent(uid)}.json${authQuery}`, {
+    await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/customers/${encodeURIComponent(uid)}.json${authQuery}`, {
       method: 'DELETE',
     });
   } catch (_) {}

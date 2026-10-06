@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 100" width="256" height="100">
+  <defs>
+    <linearGradient id="upiOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7A00" />
+      <stop offset="100%" stop-color="#E85D04" />
+    </linearGradient>
+    <linearGradient id="upiGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00A859" />
+      <stop offset="100%" stop-color="#008040" />
+    </linearGradient>
+  </defs>
+  <!-- UPI dual chevrons -->
+  <g transform="translate(14, 12)">
+    <!-- First Chevron (Orange) -->
+    <polygon points="0,76 38,76 72,0 34,0" fill="url(#upiOrange)" />
+    <!-- Second Chevron (Green) -->
+    <polygon points="38,76 76,76 110,0 72,0" fill="url(#upiGreen)" />
+  </g>
+  <!-- UPI Text -->
+  <text x="136" y="68" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="56" font-weight="900" font-style="italic" fill="#FFFFFF" letter-spacing="1">UPI</text>
+</svg>

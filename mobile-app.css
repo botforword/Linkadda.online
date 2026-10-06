@@ -103,7 +103,6 @@
   background: #e11d48;
   border-color: #ffffff;
   box-shadow: 0 0 8px rgba(225, 29, 72, 0.7);
-}
   box-shadow: 0 0 6px rgba(225, 29, 72, 0.6);
 }
 
@@ -5230,4 +5229,690 @@ body.in-search-view #fkMobileAppbar,
 [data-theme="light"] .appbar-cart-badge {
   border-color: #ffffff;
 }
+
+/* ==========================================================================
+   LINKADDA ULTRA NATIVE MOBILE APP EXPERIENCE & MODERN DESIGN REFRESH
+   Tailored for iOS & Android Smartphone Viewports (< 768px)
+   ========================================================================== */
+
+/* ── 1. GLOBAL MOBILE VIEWPORT & SCROLL OPTIMIZATION ── */
+@media (max-width: 768px) {
+  html, body {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    overscroll-behavior-y: contain !important;
+  }
+
+  body {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* ── 2. NATIVE MOBILE APP TOP BAR (STATUS + HEADER) ── */
+  .fk-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    padding: max(8px, env(safe-area-inset-top, 0px)) 12px 10px !important;
+    background: rgba(10, 8, 18, 0.94) !important;
+    backdrop-filter: blur(28px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  [data-theme="light"] .fk-header {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-bottom-color: rgba(226, 232, 240, 0.8) !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+  }
+
+  .fk-header-inner {
+    gap: 8px !important;
+  }
+
+  .fk-header-top-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 2px !important;
+  }
+
+  .fk-logo-text {
+    font-size: 1.25rem !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.4px !important;
+    background: linear-gradient(135deg, #ffffff 30%, #ff2a8d 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  [data-theme="light"] .fk-logo-text {
+    background: linear-gradient(135deg, #0f172a 30%, #e11d48 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  .fk-brand-crown {
+    color: #fbbf24 !important;
+    font-size: 0.85rem !important;
+    -webkit-text-fill-color: initial !important;
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6)) !important;
+  }
+
+  .fk-brand-sub {
+    display: none !important;
+  }
+
+  /* Right top icons on mobile */
+  .fk-header-actions {
+    gap: 8px !important;
+  }
+
+  .fk-notif-btn-wrap,
+  .fk-cart-btn-wrap {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    padding: 0 !important;
+  }
+
+  .fk-user-btn-wrap {
+    display: none !important;
+  }
+
+  .fk-cart-btn-wrap .fk-cart-btn-text {
+    display: none !important;
+  }
+
+  /* App Search Bar Pill */
+  .fk-search-row {
+    margin-top: 4px !important;
+    gap: 8px !important;
+  }
+
+  .fk-search-box {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 9999px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 12px 0 14px !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  [data-theme="light"] .fk-search-box {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .fk-search-box:active {
+    border-color: #ff2a8d !important;
+    background: rgba(255, 42, 141, 0.08) !important;
+  }
+
+  .fk-search-input {
+    font-size: 0.84rem !important;
+    color: #ffffff !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 8px !important;
+  }
+
+  [data-theme="light"] .fk-search-input {
+    color: #0f172a !important;
+  }
+
+  .fk-filter-btn {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ff2a8d !important;
+    flex-shrink: 0 !important;
+  }
+
+  [data-theme="light"] .fk-filter-btn {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #e11d48 !important;
+  }
+
+  /* ── 3. STORY-STYLE HORIZONTAL CATEGORY REEL ── */
+  .fk-quick-pills-bar {
+    padding: 6px 0 2px !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .fk-quick-pill {
+    padding: 7px 15px !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    border-radius: 9999px !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #cbd5e1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .fk-quick-pill:active {
+    transform: scale(0.92) !important;
+  }
+
+  .fk-quick-pill.active {
+    background: linear-gradient(135deg, #ff2a8d, #8b5cf6) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 14px rgba(255, 42, 141, 0.45) !important;
+  }
+
+  [data-theme="light"] .fk-quick-pill {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+  }
+
+  [data-theme="light"] .fk-quick-pill.active {
+    background: linear-gradient(135deg, #e11d48, #9333ea) !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 12px rgba(225, 29, 72, 0.3) !important;
+  }
+
+  /* ── 4. PINNED MEGA DEAL BANNER (APP SPOTLIGHT CARD) ── */
+  .collection-pack-banner {
+    border-radius: 20px !important;
+    padding: 16px 14px !important;
+    background: linear-gradient(135deg, rgba(255, 42, 141, 0.16) 0%, rgba(139, 92, 246, 0.18) 100%), rgba(14, 11, 24, 0.95) !important;
+    border: 1.5px solid rgba(255, 42, 141, 0.4) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin: 8px 0 14px !important;
+  }
+
+  [data-theme="light"] .collection-pack-banner {
+    background: linear-gradient(135deg, #fff0f6 0%, #f5f3ff 100%) !important;
+    border: 1.5px solid rgba(240, 36, 122, 0.3) !important;
+    box-shadow: 0 6px 20px rgba(240, 36, 122, 0.12) !important;
+  }
+
+  .cpb-pin {
+    font-size: 0.68rem !important;
+    font-weight: 800 !important;
+    padding: 4px 10px !important;
+    border-radius: 9999px !important;
+    background: linear-gradient(135deg, #ff2a8d, #f59e0b) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(255, 42, 141, 0.4) !important;
+  }
+
+  .cpb-title {
+    font-size: 1.12rem !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.3px !important;
+  }
+
+  .cpb-desc {
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+    color: #cbd5e1 !important;
+    margin-top: 4px !important;
+  }
+
+  [data-theme="light"] .cpb-desc {
+    color: #475569 !important;
+  }
+
+  .cpb-prices {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 8px !important;
+    margin: 10px 0 12px !important;
+  }
+
+  .cpb-original {
+    font-size: 0.88rem !important;
+    color: #94a3b8 !important;
+    text-decoration: line-through !important;
+  }
+
+  .cpb-offer {
+    font-size: 1.35rem !important;
+    font-weight: 900 !important;
+    color: #10b981 !important;
+  }
+
+  .cpb-actions-wrap {
+    display: flex !important;
+    gap: 8px !important;
+  }
+
+  .cpb-btn-cart {
+    flex: 1 !important;
+    padding: 10px 14px !important;
+    border-radius: 12px !important;
+    font-size: 0.82rem !important;
+    font-weight: 750 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+  }
+
+  .cpb-btn {
+    flex: 1.6 !important;
+    padding: 10px 16px !important;
+    border-radius: 12px !important;
+    font-size: 0.86rem !important;
+    font-weight: 800 !important;
+    background: linear-gradient(135deg, #ff2a8d, #8b5cf6) !important;
+    box-shadow: 0 4px 16px rgba(255, 42, 141, 0.45) !important;
+    color: #ffffff !important;
+  }
+
+  /* ── 5. NATIVE 2-COLUMN PRODUCT GRID (FLIPKART / BLINKIT FEED) ── */
+  .pcard-grid,
+  .fk-products-grid,
+  #categoriesGrid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    padding: 6px 0 20px !important;
+  }
+
+  .fk-card,
+  .pcard {
+    border-radius: 16px !important;
+    background: rgba(16, 14, 25, 0.94) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+    padding: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+  }
+
+  [data-theme="light"] .fk-card,
+  [data-theme="light"] .pcard {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05) !important;
+  }
+
+  .fk-card:active,
+  .pcard:active {
+    transform: scale(0.97) !important;
+  }
+
+  /* Media container */
+  .fk-card-media,
+  .pcard-img-wrap {
+    width: 100% !important;
+    margin: 0 0 8px 0 !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    position: relative !important;
+    background: #090810 !important;
+  }
+
+  [data-theme="light"] .fk-card-media,
+  [data-theme="light"] .pcard-img-wrap {
+    background: #f8fafc !important;
+  }
+
+  .fk-card-media img,
+  .pcard-img-wrap img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 12px !important;
+  }
+
+  /* Floating Heart Wishlist Icon */
+  .fk-card-wishlist-btn,
+  .pcard-wishlist-btn {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+    background: rgba(14, 11, 24, 0.75) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    position: absolute !important;
+    top: 6px !important;
+    right: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #ffffff !important;
+    font-size: 0.78rem !important;
+    z-index: 10 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .fk-card-wishlist-btn:active,
+  .pcard-wishlist-btn:active {
+    transform: scale(0.85) !important;
+  }
+
+  .fk-card-wishlist-btn.active,
+  .pcard-wishlist-btn.active {
+    background: #ff2a8d !important;
+    color: #ffffff !important;
+    border-color: #ff2a8d !important;
+  }
+
+  /* Quality / Rating Badges on Card Media */
+  .fk-card-badge-vip,
+  .pcard-tag {
+    position: absolute !important;
+    top: 6px !important;
+    left: 6px !important;
+    padding: 3px 8px !important;
+    font-size: 0.65rem !important;
+    font-weight: 800 !important;
+    border-radius: 9999px !important;
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    z-index: 8 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+  }
+
+  /* Card Body & Title */
+  .fk-card-body,
+  .pcard-body {
+    padding: 0 2px 2px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+  }
+
+  .fk-card-title,
+  .pcard-title {
+    font-size: 0.82rem !important;
+    font-weight: 750 !important;
+    line-height: 1.32 !important;
+    color: #ffffff !important;
+    margin: 0 0 6px 0 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    min-height: 2.2em !important;
+  }
+
+  [data-theme="light"] .fk-card-title,
+  [data-theme="light"] .pcard-title {
+    color: #0f172a !important;
+  }
+
+  /* Card Pricing Row */
+  .fk-card-price-row,
+  .pcard-price-row {
+    display: flex !important;
+    align-items: baseline !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    margin-top: auto !important;
+    margin-bottom: 8px !important;
+  }
+
+  .fk-card-price-current,
+  .pcard-price {
+    font-size: 1rem !important;
+    font-weight: 900 !important;
+    color: #ffffff !important;
+    letter-spacing: -0.3px !important;
+  }
+
+  [data-theme="light"] .fk-card-price-current,
+  [data-theme="light"] .pcard-price {
+    color: #0f172a !important;
+  }
+
+  .fk-card-price-cut,
+  .pcard-mrp {
+    font-size: 0.72rem !important;
+    color: #94a3b8 !important;
+    text-decoration: line-through !important;
+  }
+
+  .fk-card-discount-pill,
+  .pcard-discount {
+    font-size: 0.62rem !important;
+    font-weight: 800 !important;
+    padding: 2px 5px !important;
+    border-radius: 4px !important;
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #10b981 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  }
+
+  /* Card CTA Buttons */
+  .fk-card-cta-row,
+  .pcard-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 2px !important;
+  }
+
+  .fk-card-add-cart-btn,
+  .btn-card-add-cart {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.85rem !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+  }
+
+  [data-theme="light"] .fk-card-add-cart-btn,
+  [data-theme="light"] .btn-card-add-cart {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+  }
+
+  .fk-card-buy-btn,
+  .btn-card-buy-now {
+    flex: 1 !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+    background: linear-gradient(135deg, #ff2a8d, #8b5cf6) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 0.78rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    text-decoration: none !important;
+    border: none !important;
+    box-shadow: 0 3px 12px rgba(255, 42, 141, 0.35) !important;
+    transition: transform 0.15s ease !important;
+  }
+
+  .fk-card-buy-btn:active,
+  .btn-card-buy-now:active {
+    transform: scale(0.94) !important;
+  }
+
+  /* ── 6. NATIVE BOTTOM NAVIGATION DOCK (5 HIGH-CONVERTING TABS) ── */
+  .fk-mobile-appbar {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    background: rgba(12, 10, 22, 0.94) !important;
+    backdrop-filter: blur(28px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    z-index: 99999 !important;
+    align-items: flex-start !important;
+    justify-content: space-around !important;
+    padding-top: 6px !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  [data-theme="light"] .fk-mobile-appbar {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-top-color: #e2e8f0 !important;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .fk-appbar-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    flex: 1 !important;
+    height: 48px !important;
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+    border: none !important;
+    position: relative !important;
+    transition: transform 0.15s ease, color 0.15s ease !important;
+    border-radius: 12px !important;
+  }
+
+  .fk-appbar-item:active {
+    transform: scale(0.88) !important;
+  }
+
+  .fk-appbar-item i {
+    font-size: 1.15rem !important;
+    transition: transform 0.2s ease, color 0.2s ease !important;
+  }
+
+  .fk-appbar-item.active {
+    color: #ff2a8d !important;
+  }
+
+  .fk-appbar-item.active i {
+    color: #ff2a8d !important;
+    transform: translateY(-2px) scale(1.08) !important;
+  }
+
+  [data-theme="light"] .fk-appbar-item {
+    color: #64748b !important;
+  }
+
+  [data-theme="light"] .fk-appbar-item.active {
+    color: #e11d48 !important;
+  }
+
+  [data-theme="light"] .fk-appbar-item.active i {
+    color: #e11d48 !important;
+  }
+
+  /* ── 7. NATIVE APP BOTTOM SHEETS (CART & WISHLIST) ── */
+  .cart-drawer,
+  .wishlist-drawer,
+  .orders-drawer {
+    border-radius: 26px 26px 0 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-left: none !important;
+    max-height: 85vh !important;
+    bottom: 0 !important;
+    top: auto !important;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  .sheet-drag-handle {
+    width: 38px !important;
+    height: 4.5px !important;
+    border-radius: 3px !important;
+    background: rgba(255, 255, 255, 0.25) !important;
+    margin: 8px auto 4px !important;
+    display: block !important;
+  }
+
+  [data-theme="light"] .sheet-drag-handle {
+    background: rgba(0, 0, 0, 0.18) !important;
+  }
+}
+
+/* ── 8. DESKTOP & GLOBAL MODERN DESIGN UPGRADE ── */
+.fk-brand-col {
+  text-decoration: none !important;
+}
+
+.fk-logo-text {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 850 !important;
+}
+
+.fk-card {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+}
+
+.fk-card:hover {
+  transform: translateY(-5px) !important;
+  border-color: rgba(255, 42, 141, 0.35) !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.55), 0 0 24px rgba(255, 42, 141, 0.18) !important;
+}
+
+[data-theme="light"] .fk-card:hover {
+  border-color: #fbcfe8 !important;
+  box-shadow: 0 14px 30px rgba(225, 29, 72, 0.12), 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Glowing Accent Gradient Buttons */
+.btn-primary,
+.cart-checkout-btn,
+.fk-btn-buy-action {
+  background: linear-gradient(135deg, #ff2a8d 0%, #ff5c98 50%, #8b5cf6 100%) !important;
+  background-size: 200% auto !important;
+  box-shadow: 0 6px 24px rgba(255, 42, 141, 0.38) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-primary:hover,
+.cart-checkout-btn:hover,
+.fk-btn-buy-action:hover {
+  background-position: right center !important;
+  box-shadow: 0 8px 30px rgba(255, 42, 141, 0.55) !important;
+  transform: translateY(-2px) !important;
+}
+
 

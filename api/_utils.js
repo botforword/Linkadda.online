@@ -52,13 +52,15 @@ export function getClientIp(req) {
 export function handleCors(req, res, methods = 'GET, POST, OPTIONS') {
   const origin = req.headers?.origin || '';
   const isAllowed = !origin ||
+    origin === 'https://linkadda.online' ||
+    origin.endsWith('.linkadda.online') ||
     origin === 'https://linkadda.shop' ||
     origin.endsWith('.linkadda.shop') ||
     origin.startsWith('http://localhost:') ||
     origin.startsWith('http://127.0.0.1:') ||
     origin.includes('vercel.app');
 
-  const allowOrigin = isAllowed ? (origin || 'https://linkadda.shop') : 'https://linkadda.shop';
+  const allowOrigin = isAllowed ? (origin || 'https://linkadda.online') : 'https://linkadda.online';
   res.setHeader('Access-Control-Allow-Origin', allowOrigin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', methods);

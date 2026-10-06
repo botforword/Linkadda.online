@@ -1,6 +1,6 @@
 import { ref, onValue } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
-const RUSTFS_BASE = "https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media";
+const STORAGE_BASE = "https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media";
 const mediaMap = new Map();
 const fallbackMap = new Map();
 let observer = null;
@@ -11,7 +11,7 @@ const FALLBACK_SVG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000
 
 // Known local bundled image assets
 const LOCAL_ASSETS_LIST = [
-  "binance.png","category1.jpg","category10.jpg","category11.jpg","category12.jpg","category13.jpg","category14.jpg","category15.jpg","category16.jpg","category17.jpg","category18.jpg","category19.jpg","category2.jpg","category20.jpg","category21.jpg","category22.jpg","category23.jpg","category3.png","category4.jpg","category5.jpg","category6.jpg","category7.jpg","category8.jpg","category9.jpg","paypal.svg","paypal.png","photo_10_2026-06-15_18-29-58.jpg","photo_10_2026-06-15_18-30-46.jpg","photo_11_2026-06-15_18-29-58.jpg","photo_11_2026-06-15_18-30-46.jpg","photo_12_2026-06-15_18-29-58.jpg","photo_12_2026-06-15_18-30-46.jpg","photo_13_2026-06-15_18-29-58.jpg","photo_13_2026-06-15_18-30-46.jpg","photo_14_2026-06-15_18-29-58.jpg","photo_14_2026-06-15_18-30-46.jpg","photo_15_2026-06-15_18-29-58.jpg","photo_15_2026-06-15_18-30-46.jpg","photo_16_2026-06-15_18-29-58.jpg","photo_16_2026-06-15_18-30-46.jpg","photo_17_2026-06-15_18-29-58.jpg","photo_17_2026-06-15_18-30-46.jpg","photo_18_2026-06-15_18-29-58.jpg","photo_18_2026-06-15_18-30-46.jpg","photo_19_2026-06-15_18-29-58.jpg","photo_19_2026-06-15_18-30-46.jpg","photo_1_2026-06-15_18-29-57.jpg","photo_1_2026-06-15_18-30-46.jpg","photo_20_2026-06-15_18-29-58.jpg","photo_20_2026-06-15_18-30-46.jpg","photo_21_2026-06-15_18-29-58.jpg","photo_21_2026-06-15_18-30-46.jpg","photo_22_2026-06-15_18-29-58.jpg","photo_22_2026-06-15_18-30-46.jpg","photo_23_2026-06-15_18-29-58.jpg","photo_23_2026-06-15_18-30-46.jpg","photo_24_2026-06-15_18-29-58.jpg","photo_24_2026-06-15_18-30-46.jpg","photo_25_2026-06-15_18-29-58.jpg","photo_25_2026-06-15_18-30-46.jpg","photo_26_2026-06-15_18-29-58.jpg","photo_26_2026-06-15_18-30-46.jpg","photo_27_2026-06-15_18-29-58.jpg","photo_27_2026-06-15_18-30-46.jpg","photo_28_2026-06-15_18-29-58.jpg","photo_28_2026-06-15_18-30-46.jpg","photo_29_2026-06-15_18-29-58.jpg","photo_29_2026-06-15_18-30-46.jpg","photo_2_2026-06-15_18-29-57.jpg","photo_2_2026-06-15_18-30-46.jpg","photo_30_2026-06-15_18-29-58.jpg","photo_30_2026-06-15_18-30-46.jpg","photo_31_2026-06-15_18-29-58.jpg","photo_31_2026-06-15_18-30-46.jpg","photo_32_2026-06-15_18-29-58.jpg","photo_32_2026-06-15_18-30-47.jpg","photo_33_2026-06-15_18-29-58.jpg","photo_33_2026-06-15_18-30-47.jpg","photo_34_2026-06-15_18-29-58.jpg","photo_34_2026-06-15_18-30-47.jpg","photo_35_2026-06-15_18-29-58.jpg","photo_35_2026-06-15_18-30-47.jpg","photo_36_2026-06-15_18-29-58.jpg","photo_36_2026-06-15_18-30-47.jpg","photo_37_2026-06-15_18-29-58.jpg","photo_37_2026-06-15_18-30-47.jpg","photo_38_2026-06-15_18-29-58.jpg","photo_38_2026-06-15_18-30-47.jpg","photo_39_2026-06-15_18-29-58.jpg","photo_39_2026-06-15_18-30-47.jpg","photo_3_2026-06-15_18-29-57.jpg","photo_3_2026-06-15_18-30-46.jpg","photo_40_2026-06-15_18-29-58.jpg","photo_40_2026-06-15_18-30-47.jpg","photo_41_2026-06-15_18-29-58.jpg","photo_42_2026-06-15_18-29-58.jpg","photo_43_2026-06-15_18-29-58.jpg","photo_44_2026-06-15_18-29-58.jpg","photo_45_2026-06-15_18-29-58.jpg","photo_46_2026-06-15_18-29-58.jpg","photo_47_2026-06-15_18-29-58.jpg","photo_48_2026-06-15_18-29-58.jpg","photo_49_2026-06-15_18-29-58.jpg","photo_4_2026-06-15_18-29-57.jpg","photo_4_2026-06-15_18-30-46.jpg","photo_50_2026-06-15_18-29-58.jpg","photo_51_2026-06-15_18-29-58.jpg","photo_52_2026-06-15_18-29-58.jpg","photo_5_2026-06-15_18-29-57.jpg","photo_5_2026-06-15_18-30-46.jpg","photo_6_2026-06-15_18-29-57.jpg","photo_6_2026-06-15_18-30-46.jpg","photo_7_2026-06-15_18-29-57.jpg","photo_7_2026-06-15_18-30-46.jpg","photo_8_2026-06-15_18-29-57.jpg","photo_8_2026-06-15_18-30-46.jpg","photo_9_2026-06-15_18-29-57.jpg","photo_9_2026-06-15_18-30-46.jpg"
+  "binance.png","category1.jpg","category10.jpg","category11.jpg","category12.jpg","category13.jpg","category14.jpg","category15.jpg","category16.jpg","category17.jpg","category18.jpg","category19.jpg","category2.jpg","category20.jpg","category21.jpg","category22.jpg","category23.jpg","category3.png","category4.jpg","category5.jpg","category6.jpg","category7.jpg","category8.jpg","category9.jpg","paypal.svg","paypal.png","upi.svg","gpay.svg","phonepe.svg","paytm.svg","photo_10_2026-06-15_18-29-58.jpg","photo_10_2026-06-15_18-30-46.jpg","photo_11_2026-06-15_18-29-58.jpg","photo_11_2026-06-15_18-30-46.jpg","photo_12_2026-06-15_18-29-58.jpg","photo_12_2026-06-15_18-30-46.jpg","photo_13_2026-06-15_18-29-58.jpg","photo_13_2026-06-15_18-30-46.jpg","photo_14_2026-06-15_18-29-58.jpg","photo_14_2026-06-15_18-30-46.jpg","photo_15_2026-06-15_18-29-58.jpg","photo_15_2026-06-15_18-30-46.jpg","photo_16_2026-06-15_18-29-58.jpg","photo_16_2026-06-15_18-30-46.jpg","photo_17_2026-06-15_18-29-58.jpg","photo_17_2026-06-15_18-30-46.jpg","photo_18_2026-06-15_18-29-58.jpg","photo_18_2026-06-15_18-30-46.jpg","photo_19_2026-06-15_18-29-58.jpg","photo_19_2026-06-15_18-30-46.jpg","photo_1_2026-06-15_18-29-57.jpg","photo_1_2026-06-15_18-30-46.jpg","photo_20_2026-06-15_18-29-58.jpg","photo_20_2026-06-15_18-30-46.jpg","photo_21_2026-06-15_18-29-58.jpg","photo_21_2026-06-15_18-30-46.jpg","photo_22_2026-06-15_18-29-58.jpg","photo_22_2026-06-15_18-30-46.jpg","photo_23_2026-06-15_18-29-58.jpg","photo_23_2026-06-15_18-30-46.jpg","photo_24_2026-06-15_18-29-58.jpg","photo_24_2026-06-15_18-30-46.jpg","photo_25_2026-06-15_18-29-58.jpg","photo_25_2026-06-15_18-30-46.jpg","photo_26_2026-06-15_18-29-58.jpg","photo_26_2026-06-15_18-30-46.jpg","photo_27_2026-06-15_18-29-58.jpg","photo_27_2026-06-15_18-30-46.jpg","photo_28_2026-06-15_18-29-58.jpg","photo_28_2026-06-15_18-30-46.jpg","photo_29_2026-06-15_18-29-58.jpg","photo_29_2026-06-15_18-30-46.jpg","photo_2_2026-06-15_18-29-57.jpg","photo_2_2026-06-15_18-30-46.jpg","photo_30_2026-06-15_18-29-58.jpg","photo_30_2026-06-15_18-30-46.jpg","photo_31_2026-06-15_18-29-58.jpg","photo_31_2026-06-15_18-30-46.jpg","photo_32_2026-06-15_18-29-58.jpg","photo_32_2026-06-15_18-30-47.jpg","photo_33_2026-06-15_18-29-58.jpg","photo_33_2026-06-15_18-30-47.jpg","photo_34_2026-06-15_18-29-58.jpg","photo_34_2026-06-15_18-30-47.jpg","photo_35_2026-06-15_18-29-58.jpg","photo_35_2026-06-15_18-30-47.jpg","photo_36_2026-06-15_18-29-58.jpg","photo_36_2026-06-15_18-30-47.jpg","photo_37_2026-06-15_18-29-58.jpg","photo_37_2026-06-15_18-30-47.jpg","photo_38_2026-06-15_18-29-58.jpg","photo_38_2026-06-15_18-30-47.jpg","photo_39_2026-06-15_18-29-58.jpg","photo_39_2026-06-15_18-30-47.jpg","photo_3_2026-06-15_18-29-57.jpg","photo_3_2026-06-15_18-30-46.jpg","photo_40_2026-06-15_18-29-58.jpg","photo_40_2026-06-15_18-30-47.jpg","photo_41_2026-06-15_18-29-58.jpg","photo_42_2026-06-15_18-29-58.jpg","photo_43_2026-06-15_18-29-58.jpg","photo_44_2026-06-15_18-29-58.jpg","photo_45_2026-06-15_18-29-58.jpg","photo_46_2026-06-15_18-29-58.jpg","photo_47_2026-06-15_18-29-58.jpg","photo_48_2026-06-15_18-29-58.jpg","photo_49_2026-06-15_18-29-58.jpg","photo_4_2026-06-15_18-29-57.jpg","photo_4_2026-06-15_18-30-46.jpg","photo_50_2026-06-15_18-29-58.jpg","photo_51_2026-06-15_18-29-58.jpg","photo_52_2026-06-15_18-29-58.jpg","photo_5_2026-06-15_18-29-57.jpg","photo_5_2026-06-15_18-30-46.jpg","photo_6_2026-06-15_18-29-57.jpg","photo_6_2026-06-15_18-30-46.jpg","photo_7_2026-06-15_18-29-57.jpg","photo_7_2026-06-15_18-30-46.jpg","photo_8_2026-06-15_18-29-57.jpg","photo_8_2026-06-15_18-30-46.jpg","photo_9_2026-06-15_18-29-57.jpg","photo_9_2026-06-15_18-30-46.jpg"
 ];
 const LOCAL_ASSETS = new Set(LOCAL_ASSETS_LIST);
 const PRODUCT_PHOTOS = LOCAL_ASSETS_LIST.filter(f => f.startsWith('photo_'));
@@ -93,6 +93,10 @@ function getLocalFallback(value, el = null) {
   const lower = String(value || '').toLowerCase();
   if (lower.includes('binance')) return 'images/binance.png';
   if (lower.includes('paypal')) return 'images/paypal.svg';
+  if (lower.includes('upi')) return 'images/upi.svg';
+  if (lower.includes('gpay') || lower.includes('googlepay')) return 'images/gpay.svg';
+  if (lower.includes('phonepe')) return 'images/phonepe.svg';
+  if (lower.includes('paytm')) return 'images/paytm.svg';
 
   // Smart deterministic fallback for generated upload filenames:
   if (el) {
@@ -120,23 +124,28 @@ function initPreseededTable() {
     else if (file.startsWith('photo_')) folder = 'products';
     else if (file.includes('binance') || file.includes('paypal') || file.includes('logo')) folder = 'logos';
 
-    const rustfsUrl = `${RUSTFS_BASE}/${folder}/${file}`;
+    const supabaseUrl = `${STORAGE_BASE}/${folder}/${file}`;
+    const legacyRustfs = `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/${folder}/${file}`;
+    const legacySupa = `https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/${folder}/${file}`;
     const localPath = `images/${file}`;
 
     normalizeKeys(file).forEach((k) => {
-      mediaMap.set(k, rustfsUrl);
+      mediaMap.set(k, supabaseUrl);
       fallbackMap.set(k, localPath);
     });
 
-    normalizeKeys(rustfsUrl).forEach((k) => {
-      mediaMap.set(k, rustfsUrl);
+    normalizeKeys(supabaseUrl).forEach((k) => {
+      mediaMap.set(k, supabaseUrl);
       fallbackMap.set(k, localPath);
     });
 
-    // Also support any old legacy Supabase URLs mapping directly to RustFS
-    const legacySupa = `https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/${folder}/${file}`;
+    normalizeKeys(legacyRustfs).forEach((k) => {
+      mediaMap.set(k, supabaseUrl);
+      fallbackMap.set(k, localPath);
+    });
+
     normalizeKeys(legacySupa).forEach((k) => {
-      mediaMap.set(k, rustfsUrl);
+      mediaMap.set(k, supabaseUrl);
       fallbackMap.set(k, localPath);
     });
   });
@@ -144,8 +153,15 @@ function initPreseededTable() {
 
 function indexRecord(record) {
   if (!record || typeof record !== 'object') return;
-  const primaryUrl = stripQuery(safeUrl(record.publicUrl || record.rustfsUrl || ''));
+  let primaryUrl = stripQuery(safeUrl(record.publicUrl || record.rustfsUrl || ''));
   if (!primaryUrl) return;
+
+  if (primaryUrl.includes('rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media')) {
+    primaryUrl = primaryUrl.replace('https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media', STORAGE_BASE);
+  }
+  if (primaryUrl.includes('noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media')) {
+    primaryUrl = primaryUrl.replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media', STORAGE_BASE);
+  }
 
   const localUrl = getLocalFallback(primaryUrl) || getLocalFallback(record.sourcePath) || getLocalFallback(record.name);
 
@@ -275,9 +291,11 @@ function updateImage(el) {
     }
   }
 
-  // If it's a Supabase URL, seamlessly rewrite to RustFS S3
-  if (current.includes('supabase.co/storage/v1/object/public/media/')) {
-    const next = current.replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/', 'https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/');
+  // If it's an old Hostinger or old Supabase URL, seamlessly rewrite to active Supabase bucket
+  if (current.includes('rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media') || current.includes('noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media')) {
+    const next = current
+      .replace('https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media', STORAGE_BASE)
+      .replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media', STORAGE_BASE);
     el.dataset.resolvedSrc = next;
     el.setAttribute('src', next);
     return;

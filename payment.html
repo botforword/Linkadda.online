@@ -695,41 +695,33 @@
     }
     .qr-frame {
       position: relative;
-      padding: 16px;
-      background: #ffffff;
-      border-radius: 20px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      padding: 14px;
+      background: #ffffff !important;
+      border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 25px rgba(240, 36, 122, 0.25);
       margin: 0 auto 14px auto;
       width: fit-content;
       max-width: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.3s ease;
-    }
-    .qr-frame::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: 22px;
-      background: var(--grad);
-      z-index: -1;
-      opacity: 0.7;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .qr-frame:hover {
-      box-shadow: 0 12px 50px rgba(240, 36, 122, 0.35);
-      transform: scale(1.02);
+      box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(240, 36, 122, 0.5), 0 0 35px rgba(240, 36, 122, 0.4);
+      transform: translateY(-2px) scale(1.015);
     }
     .qr-frame canvas, .qr-frame img, .qr-frame > div {
       display: block;
       margin: 0 auto;
-      border-radius: 8px;
+      border-radius: 6px;
+      background: #ffffff !important;
     }
     .qr-frame img {
-      width: 180px;
-      height: 180px;
-      max-width: 180px;
-      max-height: 180px;
+      width: 190px;
+      height: 190px;
+      max-width: 190px;
+      max-height: 190px;
       object-fit: contain;
     }
     #customQR {
@@ -1694,7 +1686,22 @@
       <!-- UPI SECTION -->
       <div id="upiSection" style="display:none">
         <div class="qr-wrapper">
-          <div class="network-badge net-upi"><i class="fa-solid fa-mobile-screen"></i> UPI Payment</div>
+          <div class="network-badge net-upi" style="display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:30px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#34d399;font-weight:700;font-size:12.5px;margin-bottom:10px;">
+            <img src="images/upi.svg" alt="UPI" style="height:16px;width:auto;vertical-align:middle;display:inline-block;" />
+            <span>UPI Instant Payment</span>
+          </div>
+
+          <!-- Supported Apps Strip -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Pay with:</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span title="Google Pay" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.2);"><img src="images/gpay.svg" alt="GPay" style="width:20px;height:20px;object-fit:contain;" /></span>
+              <span title="PhonePe" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#5f259f;box-shadow:0 2px 6px rgba(95,37,159,0.4);"><img src="images/phonepe.svg" alt="PhonePe" style="width:20px;height:20px;object-fit:contain;" /></span>
+              <span title="Paytm" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#002970;box-shadow:0 2px 6px rgba(0,41,112,0.4);"><img src="images/paytm.svg" alt="Paytm" style="width:24px;height:16px;object-fit:contain;" /></span>
+              <span title="BHIM / Any UPI App" style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 8px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);font-size:11px;font-weight:700;color:#f8fafc;">BHIM / Any App</span>
+            </div>
+          </div>
+
           <div class="qr-frame" id="upiQRFrame">
             <div class="qr-loading" id="upiQRLoading"></div>
             <div id="upiQRGenerated" style="display:none"></div>
@@ -1933,31 +1940,7 @@
       </p>
     </div>
 
-    <!-- ━━ BECOME A SELLER PROMO CARD (Replaces redundant second Telegram button) ━━ -->
-    <div class="card seller-promo-card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.09) 0%, rgba(240, 36, 122, 0.09) 100%); border: 1.5px solid rgba(245, 158, 11, 0.35); border-radius: 18px; padding: 22px 18px; text-align: center; position: relative; overflow: hidden; margin-top: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
-      <div style="position: absolute; top: -20px; right: -20px; width: 90px; height: 90px; background: radial-gradient(circle, rgba(245,158,11,0.25) 0%, transparent 70%); pointer-events: none;"></div>
-      
-      <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px;">
-        <i class="fa-solid fa-crown"></i> Content Partner Program
-      </div>
 
-      <h3 style="font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.2px;">
-        Want to Sell Your Own Digital Packs?
-      </h3>
-
-      <p style="font-size: 12.5px; color: #cbd5e1; line-height: 1.55; margin-bottom: 16px; max-width: 380px; margin-left: auto; margin-right: auto;">
-        Join 1,200+ creators on LinkAdda. Keep <strong style="color: #34d399;">100% of every sale (0% fee)</strong> with guaranteed 7-day direct UPI payouts to your GPay / PhonePe / Paytm.
-      </p>
-
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <a href="./seller/apply.html" class="btn-become-seller-cta" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #f59e0b 0%, #f0247a 100%); color: #ffffff; text-decoration: none; font-weight: 800; font-size: 13.5px; padding: 13px 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(240, 36, 122, 0.4); transition: all 0.2s ease;">
-          <i class="fa-solid fa-bolt"></i> Apply to Become a Seller →
-        </a>
-        <a href="./seller/index.html" style="font-size: 12px; color: #94a3b8; text-decoration: none; font-weight: 600; margin-top: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
-          <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i> Explore Seller Hub Details
-        </a>
-      </div>
-    </div>
 
     <!-- ━━ ORDER SUMMARY CARD ━━ -->
     <div class="card" style="margin-top: 14px;">
@@ -1996,14 +1979,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/fireba
 import { getDatabase, ref, push, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCD_cZXyfYd01FNg-DmRpyKKBIGR3NqeT4",
-  authDomain: "linkadda-cd1da.firebaseapp.com",
-  databaseURL: "https://linkadda-cd1da-default-rtdb.firebaseio.com",
-  projectId: "linkadda-cd1da",
-  storageBucket: "linkadda-cd1da.firebasestorage.app",
-    messagingSenderId: "989651324387",
-    appId: "1:989651324387:web:f6e44be3daa9f4fc0c24d6",
-    measurementId: "G-PCH50PK2N7"
+  apiKey: "AIzaSyAWEhBIIQSUd9emGnmBgxZrvOBB4TiVXig",
+  authDomain: "linkadda-online.firebaseapp.com",
+  databaseURL: "https://linkadda-online-default-rtdb.firebaseio.com",
+  projectId: "linkadda-online",
+  storageBucket: "linkadda-online.firebasestorage.app",
+  messagingSenderId: "286997279270",
+  appId: "1:286997279270:web:1535177b16a09b9545ace7",
+  measurementId: "G-9M9EB6JS74"
 };
 
 (async () => {
@@ -2084,6 +2067,7 @@ const CONFIG = {
   recommendedMethod: 'binancepay',
   upiId: 'Ritikane@ptyes',
   qrImage: '',
+  upiLogo: 'images/upi.svg',
   telegramUrl: 'https://t.me/TRUSTED_BROTHER1234',
   bep20Address: '0x7186b11f8fD49fe472Af49Cda490f168e09Fef0a',
   ethAddress: '0x7186b11f8fD49fe472Af49Cda490f168e09Fef0a',
@@ -2295,8 +2279,9 @@ function renderDynamicPaymentMethods() {
       sub: payment.upiSub || 'GPay · PhonePe · Paytm',
       tag: payment.upiTag || '₹ INR',
       tagClass: 'tag-inr',
-      iconStyle: 'background:linear-gradient(135deg,#6b21a8,#4f46e5);overflow:hidden;padding:0;display:flex;align-items:center;justify-content:center;',
-      logo: payment.upiLogo || CONFIG.upiLogo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo-vector.svg/320px-UPI-Logo-vector.svg.png',
+      iconStyle: 'background:linear-gradient(135deg,#5f259f 0%,#28104e 100%);border:1px solid rgba(255,255,255,0.12);overflow:hidden;padding:5px;display:flex;align-items:center;justify-content:center;border-radius:14px;',
+      logo: 'images/upi.svg',
+      iconFallback: '<img src="images/upi.svg" style="width:100%;height:100%;object-fit:contain;" alt="UPI" />',
       alt: 'UPI',
     },
     {
@@ -2923,43 +2908,55 @@ function renderUpiQr() {
     directBtn.style.display = 'inline-flex';
   }
 
-  // Priority 1: If custom uploaded QR image is present, display it
-  const imageSrc = safeUrl(CONFIG.qrImage || (window.__paymentPayment && (window.__paymentPayment.qrImage || window.__paymentPayment.upiQr)), '');
-  if (imageSrc) {
-    qrGeneratedEl.style.display = 'none';
-    qrGeneratedEl.innerHTML = '';
-    qrImage.src = imageSrc;
-    qrImage.style.display = 'block';
-    qrError.style.display = 'none';
-    return;
-  }
-
-  // Priority 2: If dynamic generation is available, generate QR code with exact amount
-  if (window.QRCode && upiId) {
+  // Draw reliable dynamic QR (QRCode JS with high-res API fallback)
+  function drawQrDirectly() {
     qrImage.style.display = 'none';
     qrError.style.display = 'none';
     qrGeneratedEl.style.display = 'block';
     qrGeneratedEl.innerHTML = '';
-    try {
-      new QRCode(qrGeneratedEl, {
-        text: upiUri,
-        width: 190,
-        height: 190,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M,
-      });
-      return;
-    } catch (_) {
-      qrGeneratedEl.style.display = 'none';
+
+    let rendered = false;
+    if (typeof window.QRCode === 'function') {
+      try {
+        new QRCode(qrGeneratedEl, {
+          text: upiUri,
+          width: 190,
+          height: 190,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+        rendered = true;
+      } catch (err) {
+        console.warn('QRCode JS library error, using fallback QR:', err);
+      }
     }
+
+    // Fallback: If client-side QRCode is not available or canvas is blank, use instant SVG/image QR
+    if (!rendered || !qrGeneratedEl.firstElementChild) {
+      const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=6&data=${encodeURIComponent(upiUri)}`;
+      qrGeneratedEl.innerHTML = `<img src="${fallbackUrl}" alt="UPI QR Code" style="width:190px;height:190px;display:block;margin:0 auto;border-radius:8px;background:#fff;" />`;
+    }
+    return true;
   }
 
-  qrGeneratedEl.style.display = 'none';
-  qrGeneratedEl.innerHTML = '';
-  qrImage.removeAttribute('src');
-  qrImage.style.display = 'none';
-  qrError.style.display = 'flex';
+  // Priority 1: If custom uploaded QR image is present and valid
+  const imageSrc = safeUrl(CONFIG.qrImage || (window.__paymentPayment && (window.__paymentPayment.qrImage || window.__paymentPayment.upiQr)), '');
+  if (imageSrc && imageSrc !== '—' && !imageSrc.includes('placeholder')) {
+    qrGeneratedEl.style.display = 'none';
+    qrGeneratedEl.innerHTML = '';
+    qrError.style.display = 'none';
+    qrImage.src = imageSrc;
+    qrImage.style.display = 'block';
+    qrImage.onerror = () => {
+      console.warn('Configured QR image failed to load, automatically falling back to dynamic QR code');
+      drawQrDirectly();
+    };
+    return;
+  }
+
+  // Priority 2: Dynamic QR code with exact amount
+  drawQrDirectly();
 }
 
 function setupUPIQR() {
@@ -3618,7 +3615,23 @@ async function gotoPayScreen() {
       const isCustom = Boolean(customMethods[selectedMethod]);
       const customMethod = isCustom ? customMethods[selectedMethod] : null;
 
-      setText('detailBadgeText', isCustom ? (customMethod.name || 'Custom Payment') : (names[selectedMethod] || selectedMethod.toUpperCase()));
+      const detailBadgeEl = document.getElementById('detailBadge');
+      const badgeText = isCustom ? (customMethod.name || 'Custom Payment') : (names[selectedMethod] || selectedMethod.toUpperCase());
+      if (detailBadgeEl) {
+        if (selectedMethod === 'upi') {
+          detailBadgeEl.innerHTML = `<img src="images/upi.svg" alt="UPI" style="height:15px;width:auto;vertical-align:middle;display:inline-block;" /> <span id="detailBadgeText">${badgeText}</span>`;
+        } else if (selectedMethod === 'binancepay' || selectedMethod === 'binance' || selectedMethod === 'giftcard') {
+          detailBadgeEl.innerHTML = `<i class="fa-solid fa-coins"></i> <span id="detailBadgeText">${badgeText}</span>`;
+        } else if (selectedMethod === 'paypal') {
+          detailBadgeEl.innerHTML = `<i class="fa-brands fa-paypal"></i> <span id="detailBadgeText">${badgeText}</span>`;
+        } else if (selectedMethod === 'bep20' || selectedMethod === 'eth') {
+          detailBadgeEl.innerHTML = `<i class="fa-solid fa-link"></i> <span id="detailBadgeText">${badgeText}</span>`;
+        } else {
+          detailBadgeEl.innerHTML = `<i class="fa-solid fa-wallet"></i> <span id="detailBadgeText">${badgeText}</span>`;
+        }
+      } else {
+        setText('detailBadgeText', badgeText);
+      }
       setText('detailPaymentMethodLabel', isCustom ? (customMethod.name || 'CUSTOM') : (selectedMethod === 'upi' ? 'UPI' : (names[selectedMethod] || selectedMethod.toUpperCase())));
 
       // hide all sections
@@ -3761,19 +3774,31 @@ async function confirmUpload() {
   const originalText = submitBtn.dataset.origHtml || submitBtn.innerHTML;
   submitBtn.dataset.origHtml = originalText;
 
-  triggerButtonProgress(submitBtn, '<i class="fa-solid fa-spinner fa-spin"></i> Submitting & Opening...', 350);
+  // Pre-generate order ID immediately so it is NEVER 'pending'
+  if (!orderData.orderId && !requestedCheckout.orderId) {
+    if (window._fbPush && window._fbRef && window._fbDB) {
+      const orderRef = window._fbPush(window._fbRef(window._fbDB, 'orders'));
+      orderData.orderId = orderRef.key;
+    } else {
+      orderData.orderId = 'ord_' + Date.now();
+    }
+  }
+  const targetOrderId = orderData.orderId || requestedCheckout.orderId || ('ord_' + Date.now());
+  orderData.orderId = targetOrderId;
+
+  triggerButtonProgress(submitBtn, '<i class="fa-solid fa-spinner fa-spin"></i> Submitting Order...', 600);
 
   try {
     const names = { upi: 'UPI', bep20: 'USDT BEP-20', eth: 'USDT ERC-20', binancepay: 'Binance Pay', paypal: 'PayPal' };
     const amountText = paymentAmountForMethod(selectedMethod);
-    const methodName = names[selectedMethod];
+    const methodName = names[selectedMethod] || (selectedMethod ? selectedMethod.toUpperCase() : 'UPI');
 
-    // Fast save with 500ms max wait to guarantee zero UI lag
+    // Reliably save order to Firebase with safety fallback
     const savePromise = saveOrderToFirebase(amountText, methodName);
-    const timeoutPromise = new Promise(r => setTimeout(r, 500));
+    const safetyTimeout = new Promise(r => setTimeout(() => r({ orderId: targetOrderId }), 4500));
 
-    const savedOrder = await Promise.race([savePromise, timeoutPromise]);
-    const orderId = savedOrder?.orderId || orderData.orderId || requestedCheckout.orderId || 'pending';
+    const savedOrder = await Promise.race([savePromise, safetyTimeout]);
+    const orderId = savedOrder?.orderId || targetOrderId;
 
     const resolvedPackName = orderData.productName || orderData.title || (orderData.name && !orderData.name.includes('UPI') && !orderData.name.includes('GPay') ? orderData.name : '') || 'VIP Digital Pack';
     document.getElementById('finalName').textContent = resolvedPackName;
@@ -4024,14 +4049,17 @@ async function compressImageBase64(base64Str, maxWidth = 900, quality = 0.72) {
   });
 }
 
-// ———— UPLOAD SCREENSHOT TO RUSTFS S3 VIA API WITH FALLBACK ————
+// ———— UPLOAD SCREENSHOT TO STORAGE VIA API WITH FALLBACK ————
 async function uploadScreenshot(orderId, base64Data) {
   try {
     const compressed = await compressImageBase64(base64Data, 900, 0.75);
     const fileName = `${orderId || 'order'}_${Date.now()}.jpg`;
 
-    // 1. Try Serverless RustFS S3 Upload via /api/upload
+    // 1. Try Serverless Supabase Upload via /api/upload with 3.5s timeout
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3500);
+
       const res = await fetch('/api/upload', {
         method: 'POST',
         headers: {
@@ -4043,7 +4071,9 @@ async function uploadScreenshot(orderId, base64Data) {
           base64: compressed,
           contentType: 'image/jpeg',
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (res.ok) {
         const data = await res.json();
@@ -4052,7 +4082,7 @@ async function uploadScreenshot(orderId, base64Data) {
         }
       }
     } catch (e) {
-      console.warn('RustFS API upload fallback to base64:', e);
+      console.warn('API storage upload fallback to base64:', e);
     }
 
     return compressed;
@@ -4089,13 +4119,15 @@ async function saveOrderToFirebase(amountText, methodName) {
       }
     }
 
-    // Save order record to DB
+    // Save order record to DB with all compatible aliases for Admin Panel
     const payload = {
       orderId: orderId || null,
       id: orderId || null,
       productId: orderData.id || orderData.productId || null,
       productSlug: orderData.slug || orderData.productSlug || null,
       productName: orderData.name || orderData.productName || 'Premium Pack',
+      title: orderData.name || orderData.productName || 'Premium Pack',
+      name: orderData.name || orderData.productName || 'Premium Pack',
       downloadLink: (orderData.status === 'approved' || orderData.paymentStatus === 'approved') ? (orderData.downloadLink || orderData.fileUrl || orderData.orderLink || '') : '',
       fileUrl: (orderData.status === 'approved' || orderData.paymentStatus === 'approved') ? (orderData.downloadLink || orderData.fileUrl || orderData.orderLink || '') : '',
       orderLink: (orderData.status === 'approved' || orderData.paymentStatus === 'approved') ? (orderData.downloadLink || orderData.fileUrl || orderData.orderLink || '') : '',
@@ -4113,15 +4145,21 @@ async function saveOrderToFirebase(amountText, methodName) {
       currency: selectedMethod === 'upi' ? 'INR' : 'USD',
       paymentMethod: methodName,
       method: methodName,
+      gateway: methodName,
       screenshotUrl: finalProof || null,
       screenshot: finalProof || null,
       paymentProof: finalProof || null,
       proofUrl: finalProof || null,
+      proof: finalProof || null,
       paymentStatus: (orderData.status === 'approved' || orderData.paymentStatus === 'approved' || orderData.status === 'paid' || orderData.paymentStatus === 'paid') ? (orderData.paymentStatus || 'approved') : 'pending',
       orderStatus: (orderData.status === 'approved' || orderData.orderStatus === 'approved' || orderData.status === 'paid' || orderData.orderStatus === 'paid') ? (orderData.orderStatus || 'approved') : 'pending',
       status: (orderData.status === 'approved' || orderData.status === 'paid') ? orderData.status : 'pending',
+      buyer: 'Web Checkout Buyer',
+      buyerName: 'Web Checkout Buyer',
+      source: 'web-checkout',
       timestamp: Date.now(),
       date: new Date().toISOString(),
+      createdAt: orderData.createdAt || Date.now(),
       updatedAt: Date.now()
     };
 
@@ -4134,17 +4172,18 @@ async function saveOrderToFirebase(amountText, methodName) {
           payload.customerUid = cust.uid || '';
           payload.customerEmail = cust.email || '';
           payload.customerName = cust.displayName || '';
-          payload.buyer = cust.displayName || cust.email || payload.buyer || 'Customer';
+          payload.buyer = cust.displayName || cust.email || 'Customer';
+          payload.buyerName = cust.displayName || 'Customer';
+          payload.buyerEmail = cust.email || '';
+          payload.email = cust.email || '';
+          payload.customerPhone = cust.phone || '';
+          payload.buyerPhone = cust.phone || '';
         }
       }
     } catch (_) {}
 
     if (orderId) {
-      await window._fbSet(window._fbRef(window._fbDB, `orders/${orderId}`), {
-        ...payload,
-        createdAt: orderData.createdAt || Date.now(),
-        updatedAt: Date.now(),
-      });
+      await window._fbSet(window._fbRef(window._fbDB, `orders/${orderId}`), payload);
     }
 
     // Save to user's localStorage so they can view their order history
@@ -4178,7 +4217,7 @@ async function saveOrderToFirebase(amountText, methodName) {
 
 function buildTelegramOrderUrl(orderId, amountText, methodName) {
   const cleanUrl = String(CONFIG.telegramUrl || 'https://t.me/TRUSTED_BROTHER1234').trim().replace(/\/$/, '');
-  const tgMessage = `🛒 New Order — Linkadda Shop\n` +
+  const tgMessage = `🛒 New Order — Linkadda Online\n` +
     `📦 Category: ${orderData.name}\n` +
     `💰 Amount Paid: ${amountText}\n` +
     `💳 Payment Method: ${methodName}\n` +
@@ -4303,11 +4342,17 @@ function launchConfetti() {
 })();
 
 // Auto initialize UI immediately (before Firebase, for instant render)
-document.addEventListener('DOMContentLoaded', () => {
+function initPaymentUIOnce() {
   renderDynamicPaymentMethods();
   updateOrderSummaryUI();
   setupTelegramButtons();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPaymentUIOnce, { once: true });
+} else {
+  initPaymentUIOnce();
+}
 
 // Load payment config and order details only after Firebase is ready
 function initAfterFirebase() {
@@ -4326,10 +4371,6 @@ if (window._firebaseReady || window.__linkaddaDb) {
     if (!paymentConfigSubscribed) initAfterFirebase();
   }, 2000);
 }
-
-renderDynamicPaymentMethods();
-updateOrderSummaryUI();
-setupTelegramButtons();
 </script>
 <script type="module" src="/media-resolver.js"></script>
 </body>

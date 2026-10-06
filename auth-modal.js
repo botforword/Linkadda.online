@@ -3,97 +3,12 @@
 // True App Screen Router (No Drawers) & Clean 'Profile' Label
 // ==========================================================================
 
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCD_cZXyfYd01FNg-DmRpyKKBIGR3NqeT4",
-  authDomain: "linkadda-cd1da.firebaseapp.com",
-  projectId: "linkadda-cd1da",
-  storageBucket: "linkadda-cd1da.firebasestorage.app",
-  messagingSenderId: "989651324387",
-  appId: "1:989651324387:web:f6e44be3daa9f4fc0c24d6",
-  measurementId: "G-PCH50PK2N7",
-  databaseURL: "https://linkadda-cd1da-default-rtdb.firebaseio.com"
-};
-
-// Resilient Dynamic Firebase Auth Loader (Zero latency on page load!)
-let authInstance = null;
-let googleProviderInstance = null;
-let signInWithPopupFn = null;
-let signInWithRedirectFn = null;
-let getRedirectResultFn = null;
-let signOutFn = null;
-
-export async function getFirebaseAuth() {
-  if (authInstance && googleProviderInstance && signInWithPopupFn) {
-    return {
-      auth: authInstance,
-      googleProvider: googleProviderInstance,
-      signInWithPopup: signInWithPopupFn,
-      signInWithRedirect: signInWithRedirectFn,
-      getRedirectResult: getRedirectResultFn,
-      signOut: signOutFn
-    };
-  }
-  try {
-    const fbApp = await import("https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js");
-    const fbAuth = await import("https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js");
-    const app = fbApp.getApps().length ? fbApp.getApp() : fbApp.initializeApp(FIREBASE_CONFIG);
-    authInstance = fbAuth.getAuth(app);
-    googleProviderInstance = new fbAuth.GoogleAuthProvider();
-    googleProviderInstance.setCustomParameters({ prompt: 'select_account' });
-    signInWithPopupFn = fbAuth.signInWithPopup;
-    signInWithRedirectFn = fbAuth.signInWithRedirect;
-    getRedirectResultFn = fbAuth.getRedirectResult;
-    signOutFn = fbAuth.signOut;
-    return {
-      auth: authInstance,
-      googleProvider: googleProviderInstance,
-      signInWithPopup: signInWithPopupFn,
-      signInWithRedirect: signInWithRedirectFn,
-      getRedirectResult: getRedirectResultFn,
-      signOut: signOutFn
-    };
-  } catch (err) {
-    console.warn('Firebase Auth dynamic loader notice:', err);
-    return null;
-  }
-}
-
-// Background eager warmup of Firebase Auth & check redirect result
-export async function checkGoogleRedirectResult() {
-  try {
-    const fb = await getFirebaseAuth();
-    if (!fb || !fb.getRedirectResult || !fb.auth) return;
-    const result = await fb.getRedirectResult(fb.auth).catch(() => null);
-    if (result && result.user) {
-      const u = result.user;
-      const customer = await resolveUnifiedCustomer(u.email, {
-        displayName: u.displayName || u.email.split('@')[0],
-        provider: 'google',
-      });
-      closeAuthModal();
-      showAppToast(`Welcome back, ${customer.displayName}! 🎉`);
-      const resumed = checkAndResumePendingCheckout();
-      if (!resumed) {
-        showProfilePage();
-      }
-    }
-  } catch (err) {
-    console.warn('Google Redirect Result check notice:', err);
-  }
-}
-
-// Immediate zero-latency warmup so popup clicks have active user gesture
-if (typeof window !== 'undefined') {
-  getFirebaseAuth().then(() => checkGoogleRedirectResult()).catch(() => {});
-}
-
+// Clean Session & Router Controller (Zero External Auth Bloat)
 const SESSION_KEY = 'linkadda_customer_session';
 
-// State variables
-let currentEmail = '';
-let currentToken = '';
-let countdownInterval = null;
-let countdownSeconds = 60;
+// Safe stubs for backward compatibility
+export async function getFirebaseAuth() { return null; }
+export async function checkGoogleRedirectResult() { return; }
 
 // ━━ 0. STRING & HTML UTILITIES ━━
 function escapeHtml(str) {
@@ -158,7 +73,7 @@ export async function resolveUnifiedCustomer(email, incomingData = {}) {
       const timeoutPromise = (ms) => new Promise(r => setTimeout(r, ms));
       const fetchApi = fetch(getApiEndpoint(`/api/auth/customer?email=${encodeURIComponent(cleanEmail)}`), { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null).catch(() => null);
-      const fetchRtdb = fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/customers/${uid}.json`)
+      const fetchRtdb = fetch(`https://linkadda-online-default-rtdb.firebaseio.com/customers/${uid}.json`)
         .then(r => r.ok ? r.json() : null).catch(() => null);
 
       const [apiRes, rtdbRes] = await Promise.race([
@@ -282,7 +197,7 @@ async function syncCustomerToDatabase(user) {
 
   // 2. Direct RTDB sync to /events/customers/ (admin panel reads from here via realtime listener)
   try {
-    const eventsUrl = `https://linkadda-cd1da-default-rtdb.firebaseio.com/events/customers/${encodeURIComponent(user.uid)}.json`;
+    const eventsUrl = `https://linkadda-online-default-rtdb.firebaseio.com/events/customers/${encodeURIComponent(user.uid)}.json`;
     await fetch(eventsUrl, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -301,7 +216,7 @@ async function syncCustomerToDatabase(user) {
 
   // 3. Also sync to standard /customers/ (when rules allow direct writes)
   try {
-    const url = `https://linkadda-cd1da-default-rtdb.firebaseio.com/customers/${encodeURIComponent(user.uid)}.json`;
+    const url = `https://linkadda-online-default-rtdb.firebaseio.com/customers/${encodeURIComponent(user.uid)}.json`;
     await fetch(url, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -319,116 +234,38 @@ async function syncCustomerToDatabase(user) {
   } catch (_) {}
 }
 
-// ━━ 3. LUXURY EMAIL HTML TEMPLATE (BREVO) ━━
-function getLuxuryEmailTemplate(otp, userEmail) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your LinkAdda Verification Code</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #07060c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #07060c; padding: 40px 15px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 520px; background: linear-gradient(165deg, #161226 0%, #0d0b17 100%); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 25px 60px rgba(0,0,0,0.7), 0 0 40px rgba(255, 42, 141, 0.15); overflow: hidden;">
-          <tr>
-            <td style="padding: 36px 32px 24px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02);">
-              <div style="font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff;">
-                LinkAdda <span style="color: #ff2a8d; font-size: 26px; margin: 0 4px;">&#9819;</span> <span style="background: linear-gradient(135deg, #ff2a8d 0%, #ff7bb0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Shop</span>
-              </div>
-              <div style="margin-top: 6px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">
-                Authentic Premium Marketplace
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 40px 32px 30px; text-align: center;">
-              <div style="display: inline-block; padding: 6px 16px; border-radius: 9999px; background: rgba(255, 42, 141, 0.12); border: 1px solid rgba(255, 42, 141, 0.3); color: #ff65a3; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 18px;">
-                &#128274; One-Time Verification Code
-              </div>
-              <h1 style="margin: 0 0 12px; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px;">
-                Sign in to your account
-              </h1>
-              <p style="margin: 0 0 28px; font-size: 14px; line-height: 1.6; color: #cbd5e1;">
-                Use this single-use 6-digit code to securely authenticate for <strong style="color: #ffffff;">${userEmail}</strong>.
-              </p>
-              <div style="margin: 10px auto 26px; max-width: 320px; padding: 20px 24px; background: linear-gradient(135deg, rgba(255, 42, 141, 0.16) 0%, rgba(225, 29, 72, 0.08) 100%); border: 2px solid #ff2a8d; border-radius: 18px; box-shadow: 0 10px 35px rgba(255, 42, 141, 0.3);">
-                <span style="font-size: 40px; font-weight: 800; letter-spacing: 10px; color: #ffffff; font-family: 'Courier New', Courier, monospace; display: block; margin-left: 10px;">${otp}</span>
-              </div>
-              <p style="margin: 0; font-size: 13px; color: #fb7185; font-weight: 600;">
-                &#9201; Code expires in <strong>5 minutes</strong>.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 20px 32px; background: rgba(255, 255, 255, 0.03); border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: left;">
-              <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #94a3b8;">
-                <strong style="color: #cbd5e1;">Security Notice:</strong> LinkAdda will never ask you for this code. If you didn't request this, please ignore this email.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 24px 32px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.04);">
-              <p style="margin: 0; font-size: 12px; color: #64748b;">
-                &copy; ${new Date().getFullYear()} LinkAdda Shop &bull; <a href="https://linkadda.shop" style="color: #ff2a8d; text-decoration: none; font-weight: 600;">linkadda.shop</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
-}
 
-// ━━ 4. UI HEADER UPDATER (STRICTLY 'PROFILE' - NO EMAIL!) ━━
+
+// ━━ 4. UI HEADER UPDATER (STRICTLY 'SETTINGS' - NO PROFILE / LOGIN / SELLER) ━━
 export function updateHeaderUserUI() {
-  const user = getCustomerSession();
   const headerBtn = document.getElementById('headerUserBtn');
   const mobBtn = document.getElementById('mobUserBtn');
   const appbarBtn = document.getElementById('appbarAccountBtn');
 
-  // Desktop Header Button: strictly 'Profile' or 'Login' (NEVER EMAIL!)
+  // Desktop Header Button: 'Settings'
   if (headerBtn) {
-    if (user) {
-      headerBtn.innerHTML = `
-        <i class="fa-solid fa-circle-user" style="color: #ff2a8d; font-size: 1.05rem;"></i>
-        <span class="fk-user-btn-text" id="headerUserBtnText">Profile</span>
-      `;
-    } else {
-      headerBtn.innerHTML = `
-        <i class="fa-solid fa-user"></i>
-        <span class="fk-user-btn-text" id="headerUserBtnText">Login</span>
-      `;
-    }
+    headerBtn.innerHTML = `
+      <i class="fa-solid fa-gear" style="color: #ff2a8d; font-size: 1.05rem;"></i>
+      <span class="fk-user-btn-text" id="headerUserBtnText">Settings</span>
+    `;
+    headerBtn.setAttribute('title', 'Settings & Preferences');
   }
 
   // Mobile Drawer Button
   if (mobBtn) {
     const mobText = document.getElementById('mobUserBtnText');
     if (mobText) {
-      mobText.textContent = user ? 'My Profile' : 'Sign In / Account';
+      mobText.textContent = 'Settings';
     }
   }
 
-  // Mobile Bottom App Bar Account Tab
+  // Mobile Bottom App Bar Settings Tab
   if (appbarBtn) {
-    if (user) {
-      appbarBtn.innerHTML = `
-        <i class="fa-solid fa-circle-user" style="color: #ff2a8d;"></i>
-        <span id="appbarAccountLabel">Profile</span>
-      `;
-    } else {
-      appbarBtn.innerHTML = `
-        <i class="fa-solid fa-circle-user"></i>
-        <span id="appbarAccountLabel">Account</span>
-      `;
-    }
+    appbarBtn.innerHTML = `
+      <i class="fa-solid fa-gear" id="appbarAccountIcon" style="color: #ff2a8d;"></i>
+      <span id="appbarAccountLabel">Settings</span>
+    `;
+    appbarBtn.setAttribute('aria-label', 'Settings');
   }
 }
 
@@ -555,57 +392,30 @@ export function showProfilePage() {
 
   updateProfileAvatarUI(user);
 
-  if (user) {
-    if (greetingEl) greetingEl.textContent = user.displayName || 'Customer';
-    // HIDE redundant subtitle completely so "Verified Member" is NEVER shown twice!
-    if (subtitleEl) {
-      subtitleEl.style.display = 'none';
-    }
-    if (emailEl) emailEl.style.display = 'none'; // NEVER display raw email
-    if (idEl) idEl.textContent = `#LA-${(user.uid || '').slice(-6).toUpperCase()}`;
-    
-    // Show single verified member badge
-    if (verifiedBadgeEl) {
-      verifiedBadgeEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>Verified Member</span>`;
-      verifiedBadgeEl.style.display = 'inline-flex';
-    }
-    if (nameInput) nameInput.value = user.displayName || '';
-
-    // Format Joined Date (Single instance only - e.g. "September 16, 2026")
-    const joinedTextEl = document.getElementById('profileJoinedDateText');
-    const joinedRowEl = document.getElementById('profileJoinedText');
-    const joinedBadgeEl = document.getElementById('profileJoinedBadge');
-    const joinedTimestamp = user.createdAt || Date.now();
-    const joinedFormatted = new Date(joinedTimestamp).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-
-    if (joinedTextEl) joinedTextEl.textContent = joinedFormatted;
-    if (joinedRowEl) joinedRowEl.style.display = 'flex';
-    // HIDE duplicate pink pill completely so "Joined" is NEVER shown twice!
-    if (joinedBadgeEl) joinedBadgeEl.style.display = 'none';
-
-    if (logoutWrap) logoutWrap.style.display = 'flex';
-    if (guestCtaWrap) guestCtaWrap.style.display = 'none';
-    if (personalCard) personalCard.style.display = 'none';
-  } else {
-    if (greetingEl) greetingEl.textContent = 'Guest';
-    if (subtitleEl) {
-      subtitleEl.textContent = 'Sign in to access your orders, downloads & member perks';
-      subtitleEl.style.display = 'block';
-    }
-    if (emailEl) emailEl.style.display = 'none';
-    if (idEl) idEl.textContent = '#LA-GUEST';
-    if (verifiedBadgeEl) verifiedBadgeEl.style.display = 'none';
-    if (nameInput) nameInput.value = '';
-
-    const joinedBadgeEl = document.getElementById('profileJoinedBadge');
-    const joinedRowEl = document.getElementById('profileJoinedText');
-    if (joinedBadgeEl) joinedBadgeEl.style.display = 'none';
-    if (joinedRowEl) joinedRowEl.style.display = 'none';
-
-    if (logoutWrap) logoutWrap.style.display = 'none';
-    if (guestCtaWrap) guestCtaWrap.style.display = 'block';
-    if (personalCard) personalCard.style.display = 'none';
+  if (greetingEl) greetingEl.textContent = (user && user.displayName) ? user.displayName : 'VIP Member';
+  if (subtitleEl) subtitleEl.style.display = 'none';
+  if (emailEl) emailEl.style.display = 'none';
+  if (idEl) idEl.textContent = user ? `#LA-${(user.uid || '').slice(-6).toUpperCase()}` : '#LA-STORE';
+  
+  if (verifiedBadgeEl) {
+    verifiedBadgeEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>Verified Member</span>`;
+    verifiedBadgeEl.style.display = 'inline-flex';
   }
+  if (nameInput) nameInput.value = (user && user.displayName) || '';
+
+  const joinedTextEl = document.getElementById('profileJoinedDateText');
+  const joinedRowEl = document.getElementById('profileJoinedText');
+  const joinedBadgeEl = document.getElementById('profileJoinedBadge');
+  const joinedTimestamp = (user && user.createdAt) || Date.now();
+  const joinedFormatted = new Date(joinedTimestamp).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  if (joinedTextEl) joinedTextEl.textContent = joinedFormatted;
+  if (joinedRowEl) joinedRowEl.style.display = 'flex';
+  if (joinedBadgeEl) joinedBadgeEl.style.display = 'none';
+
+  if (logoutWrap) logoutWrap.style.display = 'none';
+  if (guestCtaWrap) guestCtaWrap.style.display = 'none';
+  if (personalCard) personalCard.style.display = 'none';
 
   // 3. Render Orders List in Place (Native App Style)
   renderAccountOrders();
@@ -646,87 +456,9 @@ export function showProfilePage() {
     themeSwitch.checked = (currentTheme === 'dark');
   }
 
-  // 5.5 Sync Creator & Seller Hub Card state (Protected: Only shown for logged-in members!)
+  // Seller section disabled
   const sellerSection = document.getElementById('profileSellerSection');
-  const sellerTitleEl = document.getElementById('profileSellerTitle');
-  const sellerDescEl = document.getElementById('profileSellerDesc');
-  const sellerBtnEl = document.getElementById('profileSellerActionBtn');
-  const sellerBtnTextEl = document.getElementById('profileSellerBtnText');
-  const sellerIndicatorEl = document.getElementById('profileSellerStatusIndicator');
-  const sellerLoginLinkEl = document.getElementById('profileSellerLoginLink');
-
-  if (sellerSection) {
-    if (!user) {
-      // STRICT REQUIREMENT: Guest/Unauthenticated users NEVER see become seller card!
-      sellerSection.style.display = 'none';
-    } else {
-      sellerSection.style.display = 'block';
-
-      let isApprovedSeller = false;
-      let isPendingApp = false;
-
-      // Check seller session
-      try {
-        const sellerRaw = localStorage.getItem('linkadda_seller_session');
-        if (sellerRaw) {
-          const sellerSess = JSON.parse(sellerRaw);
-          if (sellerSess && sellerSess.token && sellerSess.seller) {
-            isApprovedSeller = true;
-          }
-        }
-      } catch (_) {}
-
-      // Check seller application status
-      if (!isApprovedSeller) {
-        try {
-          const appRaw = localStorage.getItem('linkadda_seller_app_status');
-          if (appRaw) {
-            const appData = JSON.parse(appRaw);
-            if (appData && appData.status === 'pending') {
-              isPendingApp = true;
-            }
-          }
-        } catch (_) {}
-      }
-
-      if (sellerTitleEl && sellerBtnEl) {
-        if (isApprovedSeller) {
-          sellerTitleEl.textContent = 'Your Seller Hub is Live!';
-          sellerDescEl.textContent = 'You are an official LinkAdda verified seller. Manage your packs, monitor live customer orders, and view sales earnings.';
-          sellerBtnEl.href = './seller/dashboard.html';
-          if (sellerBtnTextEl) sellerBtnTextEl.textContent = 'Go to Seller Dashboard';
-          if (sellerIndicatorEl) {
-            sellerIndicatorEl.innerHTML = '<span class="badge-seller-active">✓ Active Seller</span>';
-            sellerIndicatorEl.style.display = 'inline-block';
-          }
-          if (sellerLoginLinkEl) sellerLoginLinkEl.style.display = 'none';
-        } else if (isPendingApp) {
-          sellerTitleEl.textContent = 'Seller Application Under Review';
-          sellerDescEl.textContent = 'Your application has been received. LinkAdda Admin is verifying your store details. Your login credentials will be emailed to you upon approval.';
-          sellerBtnEl.href = './seller/apply.html';
-          if (sellerBtnTextEl) sellerBtnTextEl.textContent = 'View Application Info';
-          if (sellerIndicatorEl) {
-            sellerIndicatorEl.innerHTML = '<span class="badge-seller-pending">⏳ Under Review</span>';
-            sellerIndicatorEl.style.display = 'inline-block';
-          }
-          if (sellerLoginLinkEl) {
-            sellerLoginLinkEl.href = './seller/login.html';
-            sellerLoginLinkEl.style.display = 'inline-block';
-          }
-        } else {
-          sellerTitleEl.textContent = 'Become a LinkAdda Seller';
-          sellerDescEl.textContent = 'Monetize your exclusive Mega & Google Drive collections, viral Telegram packs, and private vaults. Earn 100% creator share settled within 7 days of verified customer purchase.';
-          sellerBtnEl.href = './seller/index.html';
-          if (sellerBtnTextEl) sellerBtnTextEl.textContent = 'Become a Seller';
-          if (sellerIndicatorEl) sellerIndicatorEl.style.display = 'none';
-          if (sellerLoginLinkEl) {
-            sellerLoginLinkEl.href = './seller/login.html';
-            sellerLoginLinkEl.style.display = 'inline-block';
-          }
-        }
-      }
-    }
-  }
+  if (sellerSection) sellerSection.style.display = 'none';
 
   // 6. Highlight bottom appbar Profile/Account tab
   document.querySelectorAll('.fk-appbar-item').forEach(el => el.classList.remove('active'));
@@ -735,8 +467,8 @@ export function showProfilePage() {
 
   // 7. Update History Hash & Notifications UI
   updateNotificationsUI();
-  if (window.location.hash !== '#profile') {
-    window.history.pushState({ screen: 'profile' }, '', '#profile');
+  if (window.location.hash !== '#settings' && window.location.hash !== '#profile') {
+    window.history.pushState({ screen: 'settings' }, '', '#settings');
   }
 }
 
@@ -777,13 +509,6 @@ export function hideProfilePage(preventHistoryBack = false) {
 export function renderAccountOrders() {
   const countEl = document.getElementById('profileOrdersCount');
   const pillEl = document.getElementById('profileOrdersPill');
-  const user = getCustomerSession();
-
-  if (!user) {
-    if (countEl) countEl.textContent = '0 Orders';
-    if (pillEl) pillEl.textContent = '0 Orders';
-    return;
-  }
 
   // Trigger realtime order status sync from Firebase RTDB
   if (typeof syncUserOrdersWithFirebase === 'function') {
@@ -826,7 +551,7 @@ export async function saveCustomerName(newName) {
   let user = getCustomerSession();
   if (!user || !user.email) {
     const emailInput = document.getElementById('authEmailInput');
-    const fallbackEmail = currentEmail || (emailInput ? emailInput.value.trim() : '') || 'customer@linkadda.shop';
+    const fallbackEmail = currentEmail || (emailInput ? emailInput.value.trim() : '') || 'customer@linkadda.online';
     const computedUid = await getCustomerId(fallbackEmail);
     user = {
       uid: computedUid,
@@ -880,242 +605,32 @@ export async function saveCustomerName(newName) {
   showAppToast(`Name saved: "${trimmed}"!`);
 }
 
-// ━━ 6B. FULL EDIT PROFILE CONTROLLER (NAME + EMAIL) ━━
-export function openEditProfileModal() {
-  const user = getCustomerSession();
-  if (!user) {
-    openAuthModal('input');
-    return;
-  }
-  const modal = document.getElementById('appEditProfileModal');
-  const nameInput = document.getElementById('editProfileNameInput');
-  const emailInput = document.getElementById('editProfileEmailInput');
-  const dateInfo = document.getElementById('editProfileJoinedDate');
-  const feedback = document.getElementById('editProfileFeedback');
+// ━━ 6B. SETTINGS & PROFILE STUBS ━━
+export function openEditProfileModal() {}
+export function closeEditProfileModal() {}
+export async function saveCustomerProfile() {}
 
-  if (nameInput) nameInput.value = user.displayName || '';
-  if (emailInput) emailInput.value = user.email || '';
-  if (dateInfo) {
-    const d = new Date(user.createdAt || Date.now());
-    dateInfo.textContent = d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-  }
-  if (feedback) {
-    feedback.className = 'edit-profile-feedback';
-    feedback.style.display = 'none';
-  }
 
-  if (modal) {
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    setTimeout(() => {
-      if (nameInput) nameInput.focus();
-    }, 150);
-  }
-}
-
-export function closeEditProfileModal() {
-  const modal = document.getElementById('appEditProfileModal');
-  if (modal) {
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
-  }
-}
-
-export async function saveCustomerProfile() {
-  const user = getCustomerSession();
-  if (!user) return;
-
-  const nameInput = document.getElementById('editProfileNameInput');
-  const emailInput = document.getElementById('editProfileEmailInput');
-  const btnSave = document.getElementById('btnSaveFullProfile');
-  const feedback = document.getElementById('editProfileFeedback');
-
-  const newName = (nameInput ? nameInput.value : '').trim();
-  const newEmail = (emailInput ? emailInput.value : '').trim().toLowerCase();
-
-  if (!newName) {
-    if (feedback) {
-      feedback.className = 'edit-profile-feedback error';
-      feedback.textContent = 'Please enter your full name.';
-      feedback.style.display = 'block';
-    }
-    return;
-  }
-
-  if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
-    if (feedback) {
-      feedback.className = 'edit-profile-feedback error';
-      feedback.textContent = 'Please enter a valid email address.';
-      feedback.style.display = 'block';
-    }
-    return;
-  }
-
-  if (btnSave) {
-    btnSave.disabled = true;
-    btnSave.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
-  }
-
-  try {
-    const res = await fetch('/api/auth/customer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        oldEmail: user.email,
-        oldUid: user.uid,
-        email: newEmail,
-        newName: newName,
-        provider: user.provider || 'email_otp',
-      }),
-    });
-
-    let updatedUser = null;
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && data.customer) {
-        updatedUser = data.customer;
-      }
-    }
-
-    if (!updatedUser) {
-      // Fallback local update if offline
-      const newUid = await getCustomerId(newEmail);
-      updatedUser = {
-        ...user,
-        uid: newUid,
-        email: newEmail,
-        displayName: newName,
-        updatedAt: Date.now(),
-      };
-      syncCustomerToDatabase(updatedUser);
-    }
-
-    localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser));
-    window.dispatchEvent(new CustomEvent('linkadda:auth-changed', { detail: updatedUser }));
-
-    // Always sync to /events/customers/ for admin panel real-time visibility
-    syncCustomerToDatabase(updatedUser);
-
-    updateHeaderUserUI();
-    showProfilePage();
-    closeEditProfileModal();
-    showAppToast(`Profile updated: Name & Email saved!`);
-  } catch (err) {
-    console.error('Profile update error:', err);
-    if (feedback) {
-      feedback.className = 'edit-profile-feedback error';
-      feedback.textContent = err.message || 'Error updating profile.';
-      feedback.style.display = 'block';
-    }
-  } finally {
-    if (btnSave) {
-      btnSave.disabled = false;
-      btnSave.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span>Save Changes</span>`;
-    }
-  }
-}
-
-// ━━ 7. AUTH MODAL CONTROLLERS ━━
+// ━━ 7. AUTH MODAL CONTROLLERS (DISABLED) ━━
 export function openAuthModal(step = 'input') {
-  hideProfilePage(true);
-  const modal = document.getElementById('authModal');
-  if (!modal) return;
-  modal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-
-  if (step === 'input') {
-    showInputView();
-  } else if (step === 'name') {
-    showNameSetupView();
-  } else {
-    showOtpView();
-  }
+  // Login modal disabled - purchases and navigation work directly without login
+  return;
 }
 
 export function closeAuthModal() {
   const modal = document.getElementById('authModal');
-  if (!modal) return;
-  modal.classList.remove('open');
-  document.body.style.overflow = '';
-  clearStatus();
-  if (countdownInterval) clearInterval(countdownInterval);
-
-  // If user is authenticated and was attempting a purchase, automatically resume checkout
-  if (typeof getCustomerSession === 'function' && getCustomerSession()) {
-    if (typeof checkAndResumePendingCheckout === 'function') {
-      checkAndResumePendingCheckout();
-    }
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
   }
 }
 
-function showInputView() {
-  const inputView = document.getElementById('authInputView');
-  const otpView = document.getElementById('authOtpView');
-  const nameView = document.getElementById('authNameView');
-  if (inputView) inputView.style.display = 'block';
-  if (otpView) otpView.style.display = 'none';
-  if (nameView) nameView.style.display = 'none';
-  clearStatus();
-  setTimeout(() => {
-    const emailInput = document.getElementById('authEmailInput');
-    if (emailInput) emailInput.focus();
-  }, 150);
+if (typeof window !== 'undefined') {
+  window.openAuthModal = openAuthModal;
+  window.closeAuthModal = closeAuthModal;
 }
 
-function showOtpView() {
-  const inputView = document.getElementById('authInputView');
-  const otpView = document.getElementById('authOtpView');
-  const nameView = document.getElementById('authNameView');
-  if (inputView) inputView.style.display = 'none';
-  if (otpView) otpView.style.display = 'block';
-  if (nameView) nameView.style.display = 'none';
-  clearStatus();
-
-  const targetEmailEl = document.getElementById('otpTargetEmail');
-  if (targetEmailEl) targetEmailEl.textContent = currentEmail;
-
-  const boxes = document.querySelectorAll('.otp-digit-box');
-  boxes.forEach(b => b.value = '');
-  if (boxes[0]) boxes[0].focus();
-
-  startCountdown();
-}
-
-function showNameSetupView() {
-  const inputView = document.getElementById('authInputView');
-  const otpView = document.getElementById('authOtpView');
-  const nameView = document.getElementById('authNameView');
-  if (inputView) inputView.style.display = 'none';
-  if (otpView) otpView.style.display = 'none';
-  if (nameView) nameView.style.display = 'block';
-  clearStatus();
-
-  const user = getCustomerSession();
-  const setupInput = document.getElementById('authSetupNameInput');
-  if (setupInput && user) {
-    setupInput.value = user.displayName || '';
-    setTimeout(() => setupInput.focus(), 150);
-  }
-}
-
-function showStatus(message, type = 'error') {
-  const banner = document.getElementById('authMsgBanner');
-  if (!banner) return;
-  banner.className = `auth-msg-banner active ${type}`;
-  banner.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'}" style="margin-right: 6px;"></i> ${message}`;
-}
-
-function clearStatus() {
-  const banner = document.getElementById('authMsgBanner');
-  if (!banner) return;
-  banner.className = 'auth-msg-banner';
-  banner.innerHTML = '';
-}
-
-function showAuthToast(message) {
-  showAppToast(message);
-}
-
+// ━━ 8. TOAST NOTIFICATION UTILITY ━━
 export function showAppToast(message) {
   let toast = document.getElementById('laAppToast');
   if (!toast) {
@@ -1124,262 +639,11 @@ export function showAppToast(message) {
     toast.className = 'la-app-toast';
     document.body.appendChild(toast);
   }
-  toast.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #ff2a8d;"></i> <span>${message}</span>`;
+  toast.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #ff2a8d;"></i> <span>${escapeHtml(message)}</span>`;
   toast.classList.add('visible');
   setTimeout(() => {
     toast.classList.remove('visible');
   }, 2600);
-}
-
-function startCountdown() {
-  if (countdownInterval) clearInterval(countdownInterval);
-  countdownSeconds = 60;
-  const resendBtn = document.getElementById('btnResendOtp');
-  if (!resendBtn) return;
-
-  resendBtn.classList.remove('can-resend');
-  resendBtn.disabled = true;
-  resendBtn.textContent = `Resend in ${countdownSeconds}s`;
-
-  countdownInterval = setInterval(() => {
-    countdownSeconds--;
-    if (countdownSeconds <= 0) {
-      clearInterval(countdownInterval);
-      resendBtn.classList.add('can-resend');
-      resendBtn.disabled = false;
-      resendBtn.textContent = 'Resend Code';
-    } else {
-      resendBtn.textContent = `Resend in ${countdownSeconds}s`;
-    }
-  }, 1000);
-}
-
-// ━━ 8. AUTH ACTIONS (GOOGLE & EMAIL OTP) ━━
-async function handleGoogleSignIn() {
-  clearStatus();
-  const termsCheckbox = document.getElementById('authTermsCheckbox');
-  if (termsCheckbox && !termsCheckbox.checked) {
-    showStatus('Please accept the Terms & Privacy Policy to continue.', 'error');
-    return;
-  }
-
-  const googleBtn = document.getElementById('btnGoogleAuth');
-  if (googleBtn) {
-    googleBtn.disabled = true;
-    googleBtn.style.opacity = '0.7';
-    googleBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Connecting with Google...`;
-  }
-
-  try {
-    const fb = await getFirebaseAuth();
-    if (!fb) {
-      showStatus('Google sign-in is currently unavailable. Please check your internet connection or use Email OTP.', 'error');
-      return;
-    }
-
-    let result = null;
-    try {
-      result = await fb.signInWithPopup(fb.auth, fb.googleProvider);
-    } catch (popupErr) {
-      console.warn('Firebase signInWithPopup error:', popupErr);
-      if (popupErr.code === 'auth/popup-blocked') {
-        showStatus(`
-          <div style="padding: 4px 0; text-align: center;">
-            <div style="font-weight: 700; color: #f59e0b; margin-bottom: 6px;">
-              <i class="fa-solid fa-triangle-exclamation"></i> Browser blocked the popup window
-            </div>
-            <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 10px;">
-              Continuing in this window...
-            </div>
-            <button type="button" id="btnFallbackRedirectGoogle" style="background: linear-gradient(135deg, #ff2a8d 0%, #ff65a3 100%); color: #fff; border: none; padding: 9px 20px; border-radius: 9999px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 14px rgba(255,42,141,0.4);">
-              <i class="fa-brands fa-google" style="margin-right: 6px;"></i> Continue with Google
-            </button>
-          </div>
-        `, 'warning');
-
-        const fallbackBtn = document.getElementById('btnFallbackRedirectGoogle');
-        if (fallbackBtn && fb.signInWithRedirect) {
-          fallbackBtn.addEventListener('click', () => {
-            fb.signInWithRedirect(fb.auth, fb.googleProvider);
-          });
-        }
-        if (fb.signInWithRedirect) {
-          setTimeout(() => {
-            fb.signInWithRedirect(fb.auth, fb.googleProvider).catch(() => {});
-          }, 800);
-        }
-        return;
-      }
-      throw popupErr;
-    }
-
-    const u = result.user;
-    const customerUser = await resolveUnifiedCustomer(u.email, {
-      displayName: u.displayName || u.email.split('@')[0],
-      provider: 'google',
-    });
-
-    if (customerUser && customerUser.isNewUserWithNameNeeded) {
-      showNameSetupView();
-      showAuthToast(`Logged in with Google! Please enter your name.`);
-    } else {
-      // Existing user or Google user with resolved name: NEVER show name setup view!
-      closeAuthModal();
-      showAppToast(`Welcome, ${customerUser.displayName}! 🎉`);
-      const resumed = checkAndResumePendingCheckout();
-      if (!resumed) {
-        showProfilePage();
-      }
-    }
-  } catch (err) {
-    console.error('Google Sign-In Error:', err);
-    if (err.code === 'auth/unauthorized-domain') {
-      const is127 = window.location.hostname === '127.0.0.1';
-      showStatus(`
-        <strong>Domain not authorized by Firebase!</strong><br/>
-        ${is127 ? 'Please open the site at <a href="http://localhost:' + (window.location.port || '5500') + '" style="color:#ff2a8d; font-weight:700; text-decoration:underline;">http://localhost:' + (window.location.port || '5500') + '</a> instead of 127.0.0.1<br/>OR ' : ''}
-        Add <code>${window.location.hostname}</code> in <strong>Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains</strong>.
-      `, 'error');
-    } else if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-      showStatus(err.message || 'Google sign-in could not be completed.', 'error');
-    }
-  } finally {
-    if (googleBtn) {
-      googleBtn.disabled = false;
-      googleBtn.style.opacity = '1';
-      googleBtn.innerHTML = `
-        <svg class="google-icon-svg" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-        </svg>
-        <span>Continue with Google</span>
-      `;
-    }
-  }
-}
-
-async function handleSendOtp() {
-  clearStatus();
-  const termsCheckbox = document.getElementById('authTermsCheckbox');
-  if (termsCheckbox && !termsCheckbox.checked) {
-    showStatus('Please accept the Terms & Privacy Policy to continue.', 'error');
-    return;
-  }
-
-  const emailInput = document.getElementById('authEmailInput');
-  const sendBtn = document.getElementById('btnSendOtp');
-  const resendBtn = document.getElementById('btnResendOtp');
-  const email = ((emailInput ? emailInput.value : '') || currentEmail || '').trim().toLowerCase();
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showStatus('Please enter a valid email address.', 'error');
-    if (emailInput) emailInput.focus();
-    return;
-  }
-
-  if (sendBtn) {
-    sendBtn.disabled = true;
-    sendBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending code...`;
-  }
-  if (resendBtn) {
-    resendBtn.disabled = true;
-    resendBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending...`;
-  }
-
-  try {
-    const res = await fetch(getApiEndpoint('/api/auth/send-otp'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-
-    const text = await res.text();
-    let data = {};
-    try { data = JSON.parse(text); } catch (_) {}
-
-    if (!res.ok || !data.success || !data.token) {
-      throw new Error(data.error || 'Failed to dispatch verification code. Please try again.');
-    }
-
-    currentEmail = email;
-    currentToken = data.token;
-    showOtpView();
-    showStatus(`A 6-digit code has been sent to ${email}`, 'success');
-  } catch (err) {
-    console.error('Send OTP Error:', err);
-    showStatus(err.message || 'Error sending code. Please try again.', 'error');
-  } finally {
-    if (sendBtn) {
-      sendBtn.disabled = false;
-      sendBtn.innerHTML = `<span>Send Verification Code</span> <i class="fa-solid fa-arrow-right"></i>`;
-    }
-  }
-}
-
-async function handleVerifyOtp() {
-  clearStatus();
-  const boxes = document.querySelectorAll('.otp-digit-box');
-  let otp = '';
-  boxes.forEach(b => otp += (b.value || '').trim());
-
-  if (otp.length !== 6 || !/^\d{6}$/.test(otp)) {
-    showStatus('Please enter the complete 6-digit code.', 'error');
-    return;
-  }
-
-  const verifyBtn = document.getElementById('btnVerifyOtp');
-  if (verifyBtn) {
-    verifyBtn.disabled = true;
-    verifyBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying code...`;
-  }
-
-  try {
-    const res = await fetch(getApiEndpoint('/api/auth/verify-otp'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: currentEmail,
-        otp: otp,
-        token: currentToken,
-      }),
-    });
-
-    const text = await res.text();
-    let data = {};
-    try { data = JSON.parse(text); } catch (_) {}
-
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || 'Incorrect code. Please double-check and try again.');
-    }
-
-    const customer = await resolveUnifiedCustomer(currentEmail, {
-      provider: 'email_otp',
-    });
-
-      if (customer && customer.isNewUserWithNameNeeded) {
-        // First-time user only: ask for name to complete profile setup
-        showNameSetupView();
-        showAuthToast(`Account verified! Enter your name to complete setup.`);
-      } else {
-        // Existing user: NEVER show name setup view! Log in immediately.
-        closeAuthModal();
-        showAppToast(`Welcome back, ${customer.displayName}! 🎉`);
-        const resumed = checkAndResumePendingCheckout();
-        if (!resumed) {
-          showProfilePage();
-        }
-      }
-  } catch (err) {
-    console.error('Verify OTP Error:', err);
-    showStatus(err.message || 'Verification failed. Please try again.', 'error');
-  } finally {
-    if (verifyBtn) {
-      verifyBtn.disabled = false;
-      verifyBtn.innerHTML = `<span>Verify & Continue</span> <i class="fa-solid fa-check"></i>`;
-    }
-  }
 }
 
 // ━━ 9. EVENT LISTENERS INITIALIZATION ━━
@@ -1494,6 +758,8 @@ function initAuthModalEvents() {
   const appbarHomeTab = document.getElementById('appbarHomeTab');
   if (appbarHomeTab) {
     appbarHomeTab.addEventListener('click', () => {
+      document.querySelectorAll('.fk-appbar-item').forEach(el => el.classList.remove('active'));
+      appbarHomeTab.classList.add('active');
       hideProfilePage();
       closeUserOrdersModal();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1504,9 +770,11 @@ function initAuthModalEvents() {
   const appbarCategoriesTab = document.getElementById('appbarCategoriesTab');
   if (appbarCategoriesTab) {
     appbarCategoriesTab.addEventListener('click', () => {
+      document.querySelectorAll('.fk-appbar-item').forEach(el => el.classList.remove('active'));
+      appbarCategoriesTab.classList.add('active');
       hideProfilePage();
       closeUserOrdersModal();
-      const sec = document.getElementById('services');
+      const sec = document.getElementById('categoryFilterPills') || document.getElementById('services');
       if (sec) sec.scrollIntoView({ behavior: 'smooth' });
     });
   }
@@ -1529,143 +797,7 @@ function initAuthModalEvents() {
     });
   }
 
-  // Google Sign In
-  const googleBtn = document.getElementById('btnGoogleAuth');
-  if (googleBtn) googleBtn.addEventListener('click', handleGoogleSignIn);
 
-  // Send OTP
-  const sendBtn = document.getElementById('btnSendOtp');
-  if (sendBtn) sendBtn.addEventListener('click', handleSendOtp);
-
-  const emailInput = document.getElementById('authEmailInput');
-  if (emailInput) {
-    emailInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleSendOtp();
-      }
-    });
-  }
-
-  // OTP Digit Boxes behavior
-  const otpBoxes = document.querySelectorAll('.otp-digit-box');
-  otpBoxes.forEach((box, idx) => {
-    box.addEventListener('input', e => {
-      const val = e.target.value.replace(/\D/g, '');
-      box.value = val ? val.slice(-1) : '';
-      if (val && idx < otpBoxes.length - 1) {
-        otpBoxes[idx + 1].focus();
-      }
-      const fullCode = Array.from(otpBoxes).map(b => b.value).join('');
-      if (fullCode.length === 6) handleVerifyOtp();
-    });
-
-    box.addEventListener('keydown', e => {
-      if (e.key === 'Backspace' && !box.value && idx > 0) {
-        otpBoxes[idx - 1].focus();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        handleVerifyOtp();
-      }
-    });
-
-    box.addEventListener('paste', e => {
-      e.preventDefault();
-      const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
-      if (text) {
-        text.split('').forEach((char, i) => {
-          if (otpBoxes[i]) otpBoxes[i].value = char;
-        });
-        const nextIdx = Math.min(text.length, otpBoxes.length - 1);
-        if (otpBoxes[nextIdx]) otpBoxes[nextIdx].focus();
-        if (text.length === 6) handleVerifyOtp();
-      }
-    });
-  });
-
-  // Edit Email Button
-  const editEmailBtn = document.getElementById('btnEditEmail');
-  if (editEmailBtn) editEmailBtn.addEventListener('click', showInputView);
-
-  // Resend OTP Button
-  const resendBtn = document.getElementById('btnResendOtp');
-  if (resendBtn) {
-    resendBtn.addEventListener('click', () => {
-      if (resendBtn.classList.contains('can-resend')) handleSendOtp();
-    });
-  }
-
-  // Verify OTP button
-  const verifyBtn = document.getElementById('btnVerifyOtp');
-  if (verifyBtn) verifyBtn.addEventListener('click', handleVerifyOtp);
-
-  // Save Setup Name in Login Modal
-  const btnSaveSetupName = document.getElementById('btnSaveSetupName');
-  const setupNameInput = document.getElementById('authSetupNameInput');
-  if (btnSaveSetupName && setupNameInput) {
-    btnSaveSetupName.addEventListener('click', async () => {
-      const val = setupNameInput.value.trim();
-      if (val) {
-        await saveCustomerName(val);
-      }
-      closeAuthModal();
-
-      const resumed = checkAndResumePendingCheckout();
-      if (!resumed) {
-        showProfilePage();
-      }
-      if (val) {
-        showAppToast(`Welcome to LinkAdda, ${val}! 🎉`);
-      }
-    });
-
-    setupNameInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        btnSaveSetupName.click();
-      }
-    });
-  }
-
-  // Profile Screen: Save Name button
-  const btnSaveProfileName = document.getElementById('btnSaveProfileName');
-  const profileEditNameInput = document.getElementById('profileEditNameInput');
-  if (btnSaveProfileName && profileEditNameInput) {
-    btnSaveProfileName.addEventListener('click', () => {
-      saveCustomerName(profileEditNameInput.value);
-    });
-
-    profileEditNameInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        saveCustomerName(profileEditNameInput.value);
-      }
-    });
-  }
-
-  // Profile Screen: Edit Profile Modal buttons & Enter key
-  const btnEditProfileName = document.getElementById('btnEditProfileName');
-  if (btnEditProfileName) {
-    btnEditProfileName.addEventListener('click', () => openEditProfileModal());
-  }
-
-  const btnSaveFullProfile = document.getElementById('btnSaveFullProfile');
-  if (btnSaveFullProfile) {
-    btnSaveFullProfile.addEventListener('click', () => saveCustomerProfile());
-  }
-
-  const editProfileNameInput = document.getElementById('editProfileNameInput');
-  const editProfileEmailInput = document.getElementById('editProfileEmailInput');
-  [editProfileNameInput, editProfileEmailInput].forEach(inp => {
-    if (inp) {
-      inp.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          saveCustomerProfile();
-        }
-      });
-    }
-  });
 
   // Profile Screen: Theme Toggle Switch
   const themeSwitch = document.getElementById('profileThemeSwitch');
@@ -1713,9 +845,7 @@ function initAuthModalEvents() {
     });
   }
 
-  // Profile Screen: Logout Button
-  const logoutBtn = document.getElementById('profileLogoutBtn');
-  if (logoutBtn) logoutBtn.addEventListener('click', openLogoutModal);
+
 
   // Initial UI Render
   updateHeaderUserUI();
@@ -1867,7 +997,7 @@ export async function syncUserOrdersWithFirebase() {
         let isApproved = false;
         let link = '';
 
-        const res = await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/orders/${encodeURIComponent(ord.orderId)}.json`);
+        const res = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/orders/${encodeURIComponent(ord.orderId)}.json`);
         if (res.ok) {
           remoteOrder = await res.json();
         }
@@ -1875,7 +1005,7 @@ export async function syncUserOrdersWithFirebase() {
         // Fallback check to order_approvals node for instantaneous sync
         if (!remoteOrder || (!remoteOrder.status && !remoteOrder.orderStatus)) {
           try {
-            const appRes = await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/order_approvals/${encodeURIComponent(ord.orderId)}.json`);
+            const appRes = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/order_approvals/${encodeURIComponent(ord.orderId)}.json`);
             if (appRes.ok) {
               const appData = await appRes.json();
               if (appData && (appData.status === 'approved' || appData.verified)) {
@@ -1911,7 +1041,7 @@ export async function syncUserOrdersWithFirebase() {
             if (!link && (remoteOrder.productId || ord.productId)) {
               try {
                 const pId = remoteOrder.productId || ord.productId;
-                const pRes = await fetch(`https://linkadda-cd1da-default-rtdb.firebaseio.com/products/${encodeURIComponent(pId)}.json`);
+                const pRes = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/products/${encodeURIComponent(pId)}.json`);
                 if (pRes.ok) {
                   const prodData = await pRes.json();
                   if (prodData) {
@@ -2593,21 +1723,7 @@ export function renderOrdersPage(filterQuery = '') {
   const countPill = document.getElementById('ordersPageCountPill');
   if (!listEl) return;
 
-  const user = getCustomerSession();
-  if (!user) {
-    if (countPill) countPill.textContent = '0 Orders';
-    listEl.innerHTML = `
-      <div class="orders-empty-state">
-        <div class="orders-empty-icon"><i class="fa-solid fa-lock" style="color: #ff2a8d;"></i></div>
-        <h4 class="orders-empty-title">Sign in to view your orders</h4>
-        <p class="orders-empty-sub">Sign in with your email or Google account to view your purchased packs, instant telegram access links, and receipts.</p>
-        <button type="button" class="btn-explore-orders" onclick="window.openAuthModal && window.openAuthModal('input');" style="background: linear-gradient(135deg, #ff2a8d, #8b5cf6); margin-top: 12px;">
-          <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In / Register
-        </button>
-      </div>
-    `;
-    return;
-  }
+
 
   const allOrders = getUserOrders();
   let orders = allOrders;
@@ -2770,7 +1886,10 @@ window.showAppToast = showAppToast;
 window.formatRelativeTime = formatRelativeTime;
 window.handleNotificationCardClick = handleNotificationCardClick;
 window.openNotificationDetailModal = openNotificationDetailModal;
-window.closeNotificationDetailModal = closeNotificationDetailModal;
+window.showSettingsPage = showProfilePage;
+window.hideSettingsPage = hideProfilePage;
+window.showProfilePage = showProfilePage;
+window.hideProfilePage = hideProfilePage;
 window.copyNotifVipLink = copyNotifVipLink;
 
 if (document.readyState === 'loading') {

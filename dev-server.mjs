@@ -97,41 +97,20 @@ const server = http.createServer(async (req, res) => {
     }
 
     try {
-      const bust = `?v=${Date.now()}`;
-      if (pathname === '/api/auth/send-otp') {
-        const mod = await import(`./api/auth/send-otp.js${bust}`);
-        return await mod.default(req, resEnhanced);
-      }
-      if (pathname === '/api/auth/verify-otp') {
-        const mod = await import(`./api/auth/verify-otp.js${bust}`);
-        return await mod.default(req, resEnhanced);
-      }
-      if (pathname === '/api/auth/customer') {
-        const mod = await import(`./api/auth/customer.js${bust}`);
-        return await mod.default(req, resEnhanced);
-      }
       if (pathname === '/api/upload') {
         const mod = await import(`./api/upload.js${bust}`);
-        return await mod.default(req, resEnhanced);
-      }
-      if (pathname === '/api/seller/apply') {
-        const mod = await import(`./api/seller/apply.js${bust}`);
-        return await mod.default(req, resEnhanced);
-      }
-      if (pathname === '/api/seller/approve') {
-        const mod = await import(`./api/seller/approve.js${bust}`);
-        return await mod.default(req, resEnhanced);
-      }
-      if (pathname === '/api/seller/auth') {
-        const mod = await import(`./api/seller/auth.js${bust}`);
         return await mod.default(req, resEnhanced);
       }
       if (pathname === '/api/seller/products') {
         const mod = await import(`./api/seller/products.js${bust}`);
         return await mod.default(req, resEnhanced);
       }
-      if (pathname === '/api/mail/send') {
-        const mod = await import(`./api/mail/send.js${bust}`);
+      if (pathname === '/api/seller/approve') {
+        const mod = await import(`./api/seller/approve.js${bust}`);
+        return await mod.default(req, resEnhanced);
+      }
+      if (pathname === '/api/auth/customer') {
+        const mod = await import(`./api/auth/customer.js${bust}`);
         return await mod.default(req, resEnhanced);
       }
 
@@ -178,16 +157,16 @@ const server = http.createServer(async (req, res) => {
 
   // ━━ STATIC FILE ROUTING ━━
   let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
-  if (pathname === '/login') filePath = path.join(__dirname, 'login.html');
+  if (pathname === '/login' || pathname.startsWith('/seller')) {
+    res.statusCode = 301;
+    res.setHeader('Location', '/');
+    res.end();
+    return;
+  }
   if (pathname === '/about') filePath = path.join(__dirname, 'about.html');
   if (pathname === '/payment') filePath = path.join(__dirname, 'payment.html');
   if (pathname === '/admin' || pathname === '/admin/') filePath = path.join(__dirname, 'admin', 'index.html');
   if (pathname === '/admin/login' || pathname === '/admin/login/') filePath = path.join(__dirname, 'admin', 'login.html');
-  if (pathname === '/seller' || pathname === '/seller/') filePath = path.join(__dirname, 'seller', 'index.html');
-  if (pathname === '/seller/login' || pathname === '/seller/login/') filePath = path.join(__dirname, 'seller', 'login.html');
-  if (pathname === '/seller/apply' || pathname === '/seller/apply/') filePath = path.join(__dirname, 'seller', 'apply.html');
-  if (pathname === '/seller/dashboard' || pathname === '/seller/dashboard/') filePath = path.join(__dirname, 'seller', 'dashboard.html');
-  if (pathname === '/seller.css') filePath = path.join(__dirname, 'seller', 'seller.css');
   if (pathname.startsWith('/assets/')) filePath = path.join(__dirname, 'admin', pathname);
 
   if (!path.extname(pathname) && !fs.existsSync(filePath)) {
