@@ -1,0 +1,24 @@
+# Cloudflare Workers Assets Ignore List
+node_modules
+node_modules/**
+.git
+.git/**
+.github
+.github/**
+.wrangler
+.wrangler/**
+.cache
+.cache/**
+.vscode
+.vscode/**
+package.json
+package-lock.json
+dev-server.mjs
+scratch*
+*.log
+*.mjs
+.env*
+database.rules.json
+README.md
+_redirects
+_headers
