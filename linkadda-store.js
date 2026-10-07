@@ -36,6 +36,50 @@
       .replace(/'/g, '&#39;');
   }
 
+  window.handleFkMediaImgError = function(img, prodTitle) {
+    if (!img) return;
+    if (!img._triedLocal) {
+      img._triedLocal = true;
+      const cleanFn = String(img.src || '').split('/').pop().split('?')[0];
+      if (cleanFn && /^photo_|^category|^prod_/.test(cleanFn)) {
+        img.src = 'images/' + cleanFn;
+        return;
+      }
+    }
+    if (!img._triedFallback) {
+      img._triedFallback = true;
+      let hash = 0;
+      const str = prodTitle || img.alt || 'pack';
+      for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      const photoNum = (Math.abs(hash) % 52) + 1;
+      img.src = `images/photo_${photoNum}_2026-06-15_18-29-58.jpg`;
+      return;
+    }
+    img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3Ccircle cx='240' cy='120' r='32' fill='%23ff2a8d' opacity='0.25'/%3E%3Cpolygon points='234,106 254,120 234,134' fill='%23ff2a8d'/%3E%3Ctext x='50%25' y='180' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='700' text-anchor='middle'%3ELINKADDA VIP%3C/text%3E%3C/svg%3E";
+  };
+
+  window.handleFkVideoError = function(vidEl, fallbackUrl, idx, prodTitle) {
+    if (!vidEl || vidEl._failed) return;
+    vidEl._failed = true;
+    const parent = vidEl.parentElement;
+    if (!parent) return;
+    const safeImg = fallbackUrl || 'images/photo_1_2026-06-15_18-29-57.jpg';
+    const img = document.createElement('img');
+    img.src = safeImg;
+    img.alt = prodTitle || 'VIP Preview';
+    img.style.cssText = 'max-width:100%;max-height:460px;object-fit:contain;margin:0 auto;display:block;border-radius:10px;cursor:pointer;';
+    img.onclick = () => window.openFkLightbox && window.openFkLightbox(idx);
+    img.onerror = function() { window.handleFkMediaImgError(this, prodTitle); };
+
+    const notice = document.createElement('div');
+    notice.className = 'fk-video-fallback-pill';
+    notice.style.cssText = 'position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(15,14,23,0.88);backdrop-filter:blur(8px);border:1px solid rgba(255,42,141,0.35);color:#ff2a8d;font-size:11px;font-weight:700;padding:6px 14px;border-radius:20px;display:flex;align-items:center;gap:6px;z-index:4;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);';
+    notice.innerHTML = '<i class="fa-solid fa-play" style="font-size:9px;"></i> HD Video Stream in Telegram';
+
+    vidEl.replaceWith(img);
+    parent.appendChild(notice);
+  };
+
   // --- RESOLVE PRODUCT DATA (ROBUST SLUG & ID RESOLUTION, ZERO FAKE FALLBACKS) ---
   function resolveProductData(id) {
     if (!id) return null;
@@ -551,7 +595,20 @@
       return str;
     }).filter(Boolean);
 
-    videos = [...new Set(videos)];
+    videos = [...new Set(videos)].map((v) => {
+      let str = String(v || '').trim();
+      if (str.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || (str.includes('supabase.co') && !str.includes('dsleaglxbedljdxrikdn'))) {
+        const pathPart = str.split('/linkadda-media/').pop() || str.split('/public/').pop() || str.split('/').pop();
+        return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
+      }
+      if (str.startsWith('products/') || str.startsWith('categories/') || str.startsWith('videos/')) {
+        return `${SUPABASE_CDN_ROOT}/${str}`;
+      }
+      return str;
+    }).filter(Boolean);
+
+    const fallbackPoster = images[0] || (prod.image ? (typeof resolveMediaSource === 'function' ? resolveMediaSource(prod.image) : prod.image) : '') || 'images/photo_1_2026-06-15_18-29-57.jpg';
+    const prodTitleSafe = String(prod.title || prod.name || 'Pack').replace(/'/g, "\\'");
 
     const mediaList = [];
     videos.forEach((v) => mediaList.push({ type: 'vid', url: v }));
@@ -575,7 +632,7 @@
         try { if (!existingVid.paused) existingVid.pause(); } catch (_) {}
       }
 
-      const bgUrl = item.type === 'vid' ? '' : item.url;
+      const bgUrl = item.type === 'vid' ? (fallbackPoster || '') : item.url;
       const bgHtml = bgUrl ? `<div class="fk-gallery-stage-bg" style="background-image:url('${bgUrl}');"></div>` : '';
       const zoomBadge = `<button type="button" class="fk-stage-zoom-btn" onclick="window.openFkLightbox(${idx})"><i class="fa-solid fa-expand"></i> 4K Full Preview</button>`;
 
@@ -583,13 +640,13 @@
         stage.innerHTML = `
           ${bgHtml}
           ${zoomBadge}
-          <video src="${item.url}" autoplay muted loop playsinline controls style="max-width:100%;max-height:460px;margin:0 auto;display:block;border-radius:10px;"></video>
+          <video src="${item.url}" autoplay muted loop playsinline controls style="max-width:100%;max-height:460px;margin:0 auto;display:block;border-radius:10px;" onerror="window.handleFkVideoError ? window.handleFkVideoError(this, '${fallbackPoster}', ${idx}, '${prodTitleSafe}') : null;"></video>
         `;
       } else {
         stage.innerHTML = `
           ${bgHtml}
           ${zoomBadge}
-          <img src="${item.url}" alt="Preview" style="max-width:100%;max-height:460px;object-fit:contain;margin:0 auto;display:block;border-radius:10px;" onclick="window.openFkLightbox(${idx})" />
+          <img src="${item.url}" alt="Preview" style="max-width:100%;max-height:460px;object-fit:contain;margin:0 auto;display:block;border-radius:10px;" onclick="window.openFkLightbox(${idx})" onerror="window.handleFkMediaImgError ? window.handleFkMediaImgError(this, '${prodTitleSafe}') : null;" />
         `;
       }
     }
@@ -601,7 +658,7 @@
       <div class="fk-thumb-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}">
         ${m.type === 'vid'
           ? '<div style="width:100%;height:100%;background:#090a12;display:flex;align-items:center;justify-content:center;color:#e11d48;"><i class="fa-solid fa-play"></i></div>'
-          : `<img src="${m.url}" alt="Thumb" loading="lazy" />`}
+          : `<img src="${m.url}" alt="Thumb" loading="lazy" onerror="window.handleFkMediaImgError ? window.handleFkMediaImgError(this, '${prodTitleSafe}') : null;" />`}
       </div>
     `).join('');
 
@@ -636,9 +693,9 @@
     if (!current) return;
 
     if (current.type === 'vid') {
-      content.innerHTML = `<video src="${current.url}" autoplay controls loop playsinline class="fk-lightbox-item"></video>`;
+      content.innerHTML = `<video src="${current.url}" autoplay controls loop playsinline class="fk-lightbox-item" onerror="window.handleFkVideoError ? window.handleFkVideoError(this, '', window.__fkLightboxIndex, '') : null;"></video>`;
     } else {
-      content.innerHTML = `<img src="${current.url}" alt="Fullscreen 4K Preview" class="fk-lightbox-item" />`;
+      content.innerHTML = `<img src="${current.url}" alt="Fullscreen 4K Preview" class="fk-lightbox-item" onerror="window.handleFkMediaImgError ? window.handleFkMediaImgError(this, '') : null;" />`;
     }
 
     if (counter) {

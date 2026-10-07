@@ -4,85 +4,85 @@
     ".write": false,
     "products": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "categories": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "banner": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "hero": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "faq": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "testimonials": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "settings": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "payment": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "media": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "reviews": {
       ".read": true,
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "analytics": {
-      ".read": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "admin_sessions": {
-      ".read": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "visitors": {
-      ".read": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
       "$visitor_id": {
         ".write": true
       }
     },
     "events": {
-      ".read": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "customers": {
-      ".read": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
       "$customer_id": {
-        ".read": "auth != null && (auth.token.email === 'ritikanetwork96@gmail.com' || auth.uid === $customer_id)",
-        ".write": "auth != null && (auth.token.email === 'ritikanetwork96@gmail.com' || auth.uid === $customer_id)"
+        ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.uid === $customer_id)",
+        ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.uid === $customer_id)"
       }
     },
     "seller_applications": {
-      ".read": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "sellers": {
-      ".read": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "orders": {
-      ".read": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
-      ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com'",
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
       "$order_id": {
-        ".read": "auth != null && (auth.token.email === 'ritikanetwork96@gmail.com' || auth.uid === data.child('customerUid').val())",
-        ".write": "auth != null && auth.token.email === 'ritikanetwork96@gmail.com' || (newData.exists() && (!data.exists() || data.child('status').val() === 'pending' || data.child('orderStatus').val() === 'pending') && (newData.child('status').val() === 'pending' || !newData.child('status').exists()) && (newData.child('orderStatus').val() === 'pending' || !newData.child('orderStatus').exists()))"
+        ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.uid === data.child('customerUid').val())",
+        ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com') || (newData.exists() && (!data.exists() || data.child('status').val() === 'pending' || data.child('orderStatus').val() === 'pending') && (newData.child('status').val() === 'pending' || !newData.child('status').exists()) && (newData.child('orderStatus').val() === 'pending' || !newData.child('orderStatus').exists()))"
       }
     }
   }

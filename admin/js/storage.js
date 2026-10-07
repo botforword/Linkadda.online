@@ -37,12 +37,13 @@ export function getPublicUrl(path) {
   const clean = String(path || '').trim();
   if (!clean) return '';
   if (/^https?:\/\//i.test(clean) || clean.startsWith('data:') || clean.startsWith('blob:')) {
-    if (clean.includes('supabase.co/storage/v1/object/public/')) {
-      return clean.replace(/https:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/[^/]+\//, `${RUSTFS_CONFIG.endpoint}/${encodeURIComponent(RUSTFS_CONFIG.bucket)}/`);
+    if (clean.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || clean.includes('s3.linkadda.shop')) {
+      const pathPart = clean.split('/linkadda-media/').pop() || clean.split('/').pop();
+      return getSupabaseUrl(pathPart);
     }
     return clean;
   }
-  return getRustfsUrl(clean);
+  return getSupabaseUrl(clean);
 }
 
 function validateUploadFile(file) {

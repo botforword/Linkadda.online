@@ -8619,6 +8619,49 @@ function mediaSortValue(item = {}) {
   return Number(item.deletedAt || item.updatedAt || item.createdAt || 0);
 }
 
+window.handleAdminThumbImgError = function(img, fileName) {
+  if (!img) return;
+  if (!img._step) img._step = 0;
+  img._step++;
+  if (img._step === 1 && fileName) {
+    img.src = '/images/' + fileName;
+  } else if (img._step === 2 && fileName) {
+    img.src = '../images/' + fileName;
+  } else {
+    img.onerror = null;
+    img.src = '/images/placeholder.svg';
+  }
+};
+
+window.handleAdminVideoError = function(video) {
+  if (!video) return;
+  video.style.display = 'none';
+  const fallback = video.parentElement?.querySelector('.video-fallback-thumb');
+  if (fallback) fallback.style.display = 'flex';
+};
+
+window.handleAdminModalVideoError = function(video, posterUrl) {
+  if (!video || video._failed) return;
+  video._failed = true;
+  video.style.display = 'none';
+  const parent = video.parentElement;
+  if (!parent) return;
+  const existing = parent.querySelector('.modal-video-fallback');
+  if (existing) return;
+  const fallback = document.createElement('div');
+  fallback.className = 'modal-video-fallback';
+  fallback.style.cssText = 'padding: 40px 24px; text-align: center; background: radial-gradient(circle at center, #1e1b4b, #09090b); border-radius: 14px; border: 1px solid rgba(99,102,241,0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; margin: 0 auto; max-width: 480px;';
+  fallback.innerHTML = `
+    <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(99,102,241,0.2); display: flex; align-items: center; justify-content: center; color: #818cf8;">
+      <i data-lucide="film" style="width: 28px; height: 28px;"></i>
+    </div>
+    <div style="font-weight: 800; font-size: 16px; color: #fff;">Direct Video Stream Asset</div>
+    <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">This video is streamed directly via VIP Telegram channels to prevent unauthorized downloading and preserve bandwidth.</div>
+  `;
+  parent.appendChild(fallback);
+  if (window.lucide) lucide.createIcons();
+};
+
 function getAllUnifiedMediaItems(data = {}) {
   const mediaMap = new Map();
 
@@ -8645,7 +8688,7 @@ function getAllUnifiedMediaItems(data = {}) {
   }
 
   // Helper to record asset usage and add missing assets from store catalog
-  function recordAssetUsage(rawUrl, label, folderFallback = 'products') {
+  function recordAssetUsage(rawUrl, label, folderFallback = 'products', posterFallback = '') {
     const urls = extractMediaUrls(rawUrl);
     for (const url of urls) {
       const key = normalizeAssetValue(url);
@@ -8661,6 +8704,9 @@ function getAllUnifiedMediaItems(data = {}) {
         if (!existing.folder || existing.folder === 'all') {
           existing.folder = folderFallback;
         }
+        if (!existing.poster && posterFallback) {
+          existing.poster = posterFallback;
+        }
         if (existing.status === 'deleted') {
           existing.status = 'active';
           existing.deletedAt = null;
@@ -8674,6 +8720,7 @@ function getAllUnifiedMediaItems(data = {}) {
           type: isVid ? 'video' : 'image',
           path: url,
           publicUrl: resolveMediaSource(url) || url,
+          poster: posterFallback ? (resolveMediaSource(posterFallback) || posterFallback) : '',
           sourcePath: url,
           source: 'catalog-sync',
           status: 'active',
@@ -8690,6 +8737,7 @@ function getAllUnifiedMediaItems(data = {}) {
   const products = listCollection('products').filter((p) => p.status !== 'deleted');
   for (const p of products) {
     const pName = p.name || p.title || `Product #${p.id}`;
+    const pPoster = p.image || p.thumbnail || (Array.isArray(p.images) ? p.images[0] : '');
     recordAssetUsage(p.image, pName, 'products');
     recordAssetUsage(p.photo, pName, 'products');
     recordAssetUsage(p.thumbnail, pName, 'products');
@@ -8700,9 +8748,9 @@ function getAllUnifiedMediaItems(data = {}) {
     recordAssetUsage(p.galleryImages, pName, 'products');
     recordAssetUsage(p.pics, pName, 'products');
     recordAssetUsage(p.photos, pName, 'products');
-    recordAssetUsage(p.video, pName, 'products');
-    recordAssetUsage(p.videos, pName, 'products');
-    recordAssetUsage(p.videoUrl, pName, 'products');
+    recordAssetUsage(p.video, pName, 'products', pPoster);
+    recordAssetUsage(p.videos, pName, 'products', pPoster);
+    recordAssetUsage(p.videoUrl, pName, 'products', pPoster);
   }
 
   // 3. Scan All Categories
@@ -8961,6 +9009,8 @@ function renderMediaPreviewModal(item = {}) {
   const isVideo = item.type === 'video' || /\.(mp4|webm|mov|m4v|ogg)$/i.test(src);
   const usedList = Array.isArray(item.usedIn) ? item.usedIn : [];
   const isDeleted = item.status === 'deleted';
+  const fileName = mediaFileName(src || item.name || '');
+  const posterSrc = item.poster ? resolveMediaSource(item.poster) : '';
 
   return `
     <div class="panel-head media-preview-head">
@@ -8974,8 +9024,8 @@ function renderMediaPreviewModal(item = {}) {
       <div class="media-preview-figure">
         ${src ? (
           isVideo
-            ? `<video src="${escapeHtml(src)}" controls autoplay playsinline class="media-modal-video" style="max-width:100%;max-height:480px;border-radius:12px;"></video>`
-            : `<img src="${escapeHtml(src)}" alt="${escapeHtml(item.name || 'Media preview')}" loading="eager" />`
+            ? `<video src="${escapeHtml(src)}" ${posterSrc ? `poster="${escapeHtml(posterSrc)}"` : ''} controls autoplay playsinline class="media-modal-video" style="max-width:100%;max-height:480px;border-radius:12px;" onerror="window.handleAdminModalVideoError(this, '${escapeHtml(posterSrc)}')"></video>`
+            : `<img src="${escapeHtml(src)}" alt="${escapeHtml(item.name || 'Media preview')}" loading="eager" onerror="window.handleAdminThumbImgError(this, '${escapeHtml(fileName)}')" />`
         ) : '<div class="preview-fallback">No preview available</div>'}
       </div>
       <div class="media-preview-meta">
@@ -9020,6 +9070,8 @@ function renderMediaCard(item = {}) {
   const isSelected = ui.media.selectedIds?.has(item.id);
   const isDeleted = item.status === 'deleted';
   const usedList = Array.isArray(item.usedIn) ? item.usedIn : [];
+  const fileName = mediaFileName(src || item.name || '');
+  const posterSrc = item.poster ? resolveMediaSource(item.poster) : '';
 
   return `
     <article class="media-card glass ${isSelected ? 'selected' : ''} ${isDeleted ? 'is-deleted' : ''}" style="border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; position: relative;">
@@ -9032,9 +9084,13 @@ function renderMediaCard(item = {}) {
         ${isVideo ? `
           <div class="media-video-indicator"><i data-lucide="video" style="width:11px;height:11px;"></i> VID</div>
           <div class="media-play-pill"><i data-lucide="play"></i></div>
-          <video class="thumb-media" src="${escapeHtml(src)}" preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+          <video class="thumb-media" src="${escapeHtml(src)}" ${posterSrc ? `poster="${escapeHtml(posterSrc)}"` : ''} preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;" onerror="window.handleAdminVideoError(this);"></video>
+          <div class="video-fallback-thumb" style="display:none; width:100%; height:100%; align-items:center; justify-content:center; background: radial-gradient(circle at center, #1e1b4b, #0b0f19); color:#818cf8; flex-direction:column; gap:6px;">
+            <i data-lucide="film" style="width:32px;height:32px;opacity:0.8;"></i>
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:0.04em;background:rgba(99,102,241,0.25);padding:2px 8px;border-radius:6px;border:1px solid rgba(99,102,241,0.35);">VIDEO ASSET</span>
+          </div>
         ` : `
-          <img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.name || 'Media')}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src='../images/placeholder.svg';" />
+          <img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.name || 'Media')}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="window.handleAdminThumbImgError(this, '${escapeHtml(fileName)}');" />
         `}
       </button>
 
@@ -9123,7 +9179,7 @@ function renderMediaList(items = []) {
             <button class="media-table-preview" type="button" data-action="preview-media" data-id="${escapeHtml(item.id || '')}">
               ${isVideo
                 ? `<div style="width:100%;height:100%;background:#1e1b4b;display:flex;align-items:center;justify-content:center;color:#ec4899;"><i data-lucide="play" style="width:18px;height:18px;"></i></div>`
-                : `<img src="${escapeHtml(src)}" alt="${escapeHtml(item.name || 'Media')}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src='../images/placeholder.svg';" />`
+                : `<img src="${escapeHtml(src)}" alt="${escapeHtml(item.name || 'Media')}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="window.handleAdminThumbImgError(this, '${escapeHtml(mediaFileName(src || item.name || ''))}');" />`
               }
             </button>
             <div class="media-table-name">

@@ -2053,6 +2053,38 @@
     }
   };
 
+  window.handleCardVideoError = function(vid) {
+    if (!vid || vid._failed) return;
+    vid._failed = true;
+    const slide = vid.closest('.fb-slide') || vid.parentElement;
+    if (!slide) return;
+    const card = vid.closest('.pcard, .fk-card');
+    const existingImg = card ? card.querySelector('img.pcard-img') : null;
+    const fallbackImg = existingImg ? existingImg.src : '';
+    if (fallbackImg) {
+      const img = document.createElement('img');
+      img.src = fallbackImg;
+      img.alt = 'Media Preview';
+      img.className = 'pcard-img';
+      img.loading = 'lazy';
+      img.draggable = false;
+      vid.replaceWith(img);
+    } else {
+      const img = document.createElement('img');
+      const seed = card?.dataset?.productId || card?.dataset?.fbId || '1';
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+      const photoNum = (Math.abs(hash) % 52) + 1;
+      img.src = `images/photo_${photoNum}_2026-06-15_18-29-58.jpg`;
+      img.alt = 'Media Preview';
+      img.className = 'pcard-img';
+      img.loading = 'lazy';
+      img.draggable = false;
+      img.onerror = function() { window.handleCardImgError(this); };
+      vid.replaceWith(img);
+    }
+  };
+
   // -- BUILD SLIDESHOW --
   function buildSlideshow(images, videos, title) {
     const all = [];
@@ -2069,7 +2101,7 @@
         <div class="fb-slide fb-slide-active">
           ${m.t === 'img'
             ? `<img src="${esc(m.u)}" alt="${esc(title)}" class="pcard-img" loading="lazy" decoding="async" draggable="false" data-fallback="${esc(localFallback)}" onerror="window.handleCardImgError(this);"/>`
-            : `<video src="${esc(m.u)}" class="pcard-img" preload="metadata" muted loop playsinline></video>`}
+            : `<video src="${esc(m.u)}" class="pcard-img" preload="metadata" muted loop playsinline onerror="window.handleCardVideoError(this);"></video>`}
         </div>
       </div>`;
     }
@@ -2080,7 +2112,7 @@
       if (m.t === 'img') {
         return `<div class="fb-slide${i === 0 ? ' fb-slide-active' : ''}"><img src="${esc(m.u)}" loading="lazy" decoding="async" alt="${esc(title)}" draggable="false" data-fallback="${esc(localFallback)}" onerror="window.handleCardImgError(this);"/></div>`;
       } else {
-        return `<div class="fb-slide${i === 0 ? ' fb-slide-active' : ''}"><video ${i === 0 ? `src="${esc(m.u)}"` : `data-src="${esc(m.u)}"`} preload="none" muted loop playsinline class="pcard-img"></video></div>`;
+        return `<div class="fb-slide${i === 0 ? ' fb-slide-active' : ''}"><video ${i === 0 ? `src="${esc(m.u)}"` : `data-src="${esc(m.u)}"`} preload="none" muted loop playsinline class="pcard-img" onerror="window.handleCardVideoError(this);"></video></div>`;
       }
     }).join('');
 
@@ -2149,17 +2181,13 @@
       }
     }
 
-    const isCloudflareLive = typeof window !== 'undefined' && window.location && window.location.hostname === 'linkadda.online';
-    const SUPABASE_CDN_ROOT = isCloudflareLive ? '/media' : 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
+    const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
     const images = rawList.map(u => {
       let clean = String(u || '').trim();
       if (!clean) return '';
       if (clean.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || (clean.includes('supabase.co') && !clean.includes('dsleaglxbedljdxrikdn'))) {
         const pathPart = clean.split('/linkadda-media/').pop() || clean.split('/public/').pop() || clean.split('/').pop();
         return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
-      }
-      if (clean.startsWith('https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media')) {
-        return isCloudflareLive ? clean.replace('https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media', '/media') : clean;
       }
       if (clean.startsWith('https://dsleaglxbedljdxrikdn.supabase.co/')) {
         return clean;
@@ -2183,6 +2211,9 @@
       if (v.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || (v.includes('supabase.co') && !v.includes('dsleaglxbedljdxrikdn'))) {
         const pathPart = v.split('/linkadda-media/').pop() || v.split('/public/').pop() || v.split('/').pop();
         return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
+      }
+      if (v.startsWith('products/') || v.startsWith('categories/') || v.startsWith('videos/')) {
+        return `${SUPABASE_CDN_ROOT}/${v}`;
       }
       return v;
     });
