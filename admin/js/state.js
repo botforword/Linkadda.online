@@ -24,6 +24,34 @@ function loadCachedStore() {
     seller_applications: {},
   };
 
+  // 1. Seed from window.__preloadedCatalog immediately (instant 0ms bootstrap)
+  try {
+    const preCatalog = (typeof window !== 'undefined' && window.__preloadedCatalog) ? window.__preloadedCatalog : null;
+    if (preCatalog && typeof preCatalog === 'object') {
+      ['products', 'categories', 'banner', 'hero', 'faq', 'testimonials'].forEach((k) => {
+        if (preCatalog[k] && typeof preCatalog[k] === 'object' && Object.keys(preCatalog[k]).length > 0) {
+          initial[k] = { ...preCatalog[k] };
+        }
+      });
+    }
+  } catch (_) {}
+
+  // 2. Merge from live storefront cache if available
+  try {
+    const rawLive = localStorage.getItem('linkadda_cached_live_data');
+    if (rawLive) {
+      const parsedLive = JSON.parse(rawLive);
+      if (parsedLive && typeof parsedLive === 'object') {
+        ['products', 'categories', 'banner'].forEach((k) => {
+          if (parsedLive[k] && typeof parsedLive[k] === 'object' && Object.keys(parsedLive[k]).length > 0) {
+            initial[k] = { ...(initial[k] || {}), ...parsedLive[k] };
+          }
+        });
+      }
+    }
+  } catch (_) {}
+
+  // 3. Merge from admin's own saved cache (if it contains actual data)
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) {
@@ -31,9 +59,25 @@ function loadCachedStore() {
       if (parsed && typeof parsed === 'object') {
         Object.keys(initial).forEach((k) => {
           if (parsed[k] && typeof parsed[k] === 'object' && Object.keys(parsed[k]).length > 0) {
-            initial[k] = parsed[k];
+            initial[k] = { ...(initial[k] || {}), ...parsed[k] };
           }
         });
+      }
+    }
+  } catch (_) {}
+
+  // 4. Sanitize store branding to prevent JaiGram crossover
+  try {
+    if (initial.settings && typeof initial.settings === 'object') {
+      if (!initial.settings.siteName || /jaigram|jai/i.test(initial.settings.siteName)) {
+        initial.settings.siteName = 'Linkadda Online';
+      }
+    }
+    // Clean up any legacy JaiGram keys from localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && /jaigram/i.test(k)) {
+        localStorage.removeItem(k);
       }
     }
   } catch (_) {}
@@ -141,9 +185,22 @@ function attachNode(key, mode = 'collection') {
   try {
     get(ref(db, nodeName))
       .then((snap) => {
-        if (snap.exists()) {
-          STORE[key] = snap.val() || (mode === 'singleton' ? {} : {});
-          emit();
+        if (snap.exists() && snap.val()) {
+          const val = snap.val();
+          if (typeof val === 'object' && Object.keys(val).length > 0) {
+            STORE[key] = val;
+            emit();
+          } else if (mode === 'singleton') {
+            STORE[key] = val;
+            emit();
+          }
+        } else if (!snap.exists() || !snap.val()) {
+          // If RTDB node is empty but STORE has data and user is admin, seed RTDB
+          if (auth.currentUser) {
+            if (STORE[key] && typeof STORE[key] === 'object' && Object.keys(STORE[key]).length > 0) {
+              set(ref(db, nodeName), STORE[key]).catch(() => {});
+            }
+          }
         }
       })
       .catch(() => {});
@@ -151,8 +208,16 @@ function attachNode(key, mode = 'collection') {
     const unsub = onValue(
       ref(db, nodeName),
       (snap) => {
-        STORE[key] = snap.val() || (mode === 'singleton' ? {} : {});
-        emit();
+        if (snap.exists() && snap.val()) {
+          const val = snap.val();
+          if (typeof val === 'object' && Object.keys(val).length > 0) {
+            STORE[key] = val;
+            emit();
+          } else if (mode === 'singleton') {
+            STORE[key] = val;
+            emit();
+          }
+        }
       },
       (err) => {
         // Silently catch permission errors until auth resolves
@@ -189,6 +254,9 @@ export function startRealtime(force = false) {
   attachNode('sellers');
   attachNode('seller_applications');
 }
+
+// Proactively start listeners on load
+startRealtime();
 
 // Automatically bind listeners to auth state transitions
 onAuthStateChanged(auth, (user) => {

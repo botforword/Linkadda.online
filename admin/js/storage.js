@@ -37,8 +37,8 @@ export function getPublicUrl(path) {
   const clean = String(path || '').trim();
   if (!clean) return '';
   if (/^https?:\/\//i.test(clean) || clean.startsWith('data:') || clean.startsWith('blob:')) {
-    if (clean.includes('supabase.co/storage/v1/object/public/media/')) {
-      return clean.replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/', `${RUSTFS_CONFIG.endpoint}/${encodeURIComponent(RUSTFS_CONFIG.bucket)}/`);
+    if (clean.includes('supabase.co/storage/v1/object/public/')) {
+      return clean.replace(/https:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/[^/]+\//, `${RUSTFS_CONFIG.endpoint}/${encodeURIComponent(RUSTFS_CONFIG.bucket)}/`);
     }
     return clean;
   }

@@ -38,8 +38,12 @@
   <title>Linkadda Online</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" media="print" onload="this.media='all'" />
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Montserrat:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  </noscript>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css?v=20261005a" />
   <link rel="stylesheet" href="linkadda-store.css?v=20261005a" />
@@ -1054,6 +1058,7 @@
           <div style="text-align:center;color:var(--muted);"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;margin-bottom:8px;color:#f0247a;"></i><div>Loading store catalog...</div></div>
         </div>
       </div>
+      <script>if (typeof window.renderInstantCatalog === 'function') window.renderInstantCatalog();</script>
     </div>
   </section>
 
@@ -2028,6 +2033,26 @@
     await triggerCheckoutTracking(link);
   });
 
+  window.handleCardImgError = function(img) {
+    if (!img) return;
+    const fallback = img.dataset.fallback || '';
+    if (fallback && img.src !== fallback && !img._triedLocal) {
+      img._triedLocal = true;
+      img.src = fallback;
+    } else if (!img._triedPool) {
+      img._triedPool = true;
+      const card = img.closest ? img.closest('.fk-card, .pcard') : null;
+      const seed = card?.dataset?.productId || card?.dataset?.fbId || img.alt || '';
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) hash = (hash << 5) - hash + seed.charCodeAt(i);
+      const photoNum = (Math.abs(hash) % 52) + 1;
+      img.src = `images/photo_${photoNum}_2026-06-15_18-29-58.jpg`;
+    } else if (!img._failedSvg) {
+      img._failedSvg = true;
+      img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3Ccircle cx='240' cy='120' r='32' fill='%23ff2a8d' opacity='0.25'/%3E%3Cpolygon points='234,106 254,120 234,134' fill='%23ff2a8d'/%3E%3Ctext x='50%25' y='180' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='700' text-anchor='middle'%3ELINKADDA VIP%3C/text%3E%3C/svg%3E";
+    }
+  };
+
   // -- BUILD SLIDESHOW --
   function buildSlideshow(images, videos, title) {
     const all = [];
@@ -2043,7 +2068,7 @@
       return `<div class="pcard-img-wrap fb-slideshow single-media" id="${uid}" data-idx="0" style="cursor:zoom-in;">
         <div class="fb-slide fb-slide-active">
           ${m.t === 'img'
-            ? `<img src="${esc(m.u)}" alt="${esc(title)}" class="pcard-img" loading="lazy" decoding="async" draggable="false" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}"/>`
+            ? `<img src="${esc(m.u)}" alt="${esc(title)}" class="pcard-img" loading="lazy" decoding="async" draggable="false" data-fallback="${esc(localFallback)}" onerror="window.handleCardImgError(this);"/>`
             : `<video src="${esc(m.u)}" class="pcard-img" preload="metadata" muted loop playsinline></video>`}
         </div>
       </div>`;
@@ -2053,7 +2078,7 @@
       const fn = String(m.u || '').split('/').pop().split('?')[0];
       const localFallback = `images/${fn}`;
       if (m.t === 'img') {
-        return `<div class="fb-slide${i === 0 ? ' fb-slide-active' : ''}"><img src="${esc(m.u)}" loading="lazy" decoding="async" alt="${esc(title)}" draggable="false" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}"/></div>`;
+        return `<div class="fb-slide${i === 0 ? ' fb-slide-active' : ''}"><img src="${esc(m.u)}" loading="lazy" decoding="async" alt="${esc(title)}" draggable="false" data-fallback="${esc(localFallback)}" onerror="window.handleCardImgError(this);"/></div>`;
       } else {
         return `<div class="fb-slide${i === 0 ? ' fb-slide-active' : ''}"><video ${i === 0 ? `src="${esc(m.u)}"` : `data-src="${esc(m.u)}"`} preload="none" muted loop playsinline class="pcard-img"></video></div>`;
       }
@@ -2124,13 +2149,17 @@
       }
     }
 
-    const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
+    const isCloudflareLive = typeof window !== 'undefined' && window.location && window.location.hostname === 'linkadda.online';
+    const SUPABASE_CDN_ROOT = isCloudflareLive ? '/media' : 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
     const images = rawList.map(u => {
       let clean = String(u || '').trim();
       if (!clean) return '';
-      if (clean.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || clean.includes('noecylfqhtfwbjfkjxoo.supabase.co')) {
-        const pathPart = clean.split('/linkadda-media/').pop() || clean.split('/media/').pop() || clean.split('/').pop();
+      if (clean.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || (clean.includes('supabase.co') && !clean.includes('dsleaglxbedljdxrikdn'))) {
+        const pathPart = clean.split('/linkadda-media/').pop() || clean.split('/public/').pop() || clean.split('/').pop();
         return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
+      }
+      if (clean.startsWith('https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media')) {
+        return isCloudflareLive ? clean.replace('https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media', '/media') : clean;
       }
       if (clean.startsWith('https://dsleaglxbedljdxrikdn.supabase.co/')) {
         return clean;
@@ -2151,8 +2180,8 @@
     const videoFallback = cat.video ? [cat.video] : [];
     const rawVideos = [...new Set([...videoList, ...videoFallback].map(u => String(u || '').trim()).filter(Boolean))];
     const videos = rawVideos.map(v => {
-      if (v.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || v.includes('noecylfqhtfwbjfkjxoo.supabase.co')) {
-        const pathPart = v.split('/linkadda-media/').pop() || v.split('/media/').pop() || v.split('/').pop();
+      if (v.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || (v.includes('supabase.co') && !v.includes('dsleaglxbedljdxrikdn'))) {
+        const pathPart = v.split('/linkadda-media/').pop() || v.split('/public/').pop() || v.split('/').pop();
         return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
       }
       return v;
@@ -2972,7 +3001,10 @@
   };
 
   // -- BUILD CARD (AUTHENTIC LUXURY E-COMMERCE CARD) --
-  function buildCard(id, cat) {
+  function buildCard(id, cat, cardIndex = 0) {
+    if (typeof window.buildProductCardHtml === 'function') {
+      return window.buildProductCardHtml(id, cat, cardIndex);
+    }
     const media = resolveMediaList(cat);
     const images = (media.images || []).filter(Boolean);
     const firstImg = images[0] || '';
@@ -3027,13 +3059,16 @@
     const badgeIconHtml = `<i class="fa-solid ${esc(badgeIconClass)}" ${badgeIconStyle}></i>`;
     const badgeHtml = customBadge ? `<div class="fk-card-badges-row"><span class="fk-card-badge-vip${badgeColorClass}" ${badgeInlineStyle}>${badgeIconHtml} ${esc(customBadge)}</span></div>` : '';
 
-    function makeCardImgHtml(imgUrl, title, isEager = false) {
+    function makeCardImgHtml(imgUrl, title, isEager = false, isSecondary = false) {
       if (!imgUrl) return '<div class="fk-card-no-img"><i class="fa-solid fa-gem"></i> VIP Pack</div>';
       const cleanUrl = esc(imgUrl);
       const fn = String(imgUrl || '').split('/').pop().split('?')[0];
       const localFallback = `images/${fn}`;
-      const defaultSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'><rect width='100%' height='100%' fill='%2313121f'/><circle cx='240' cy='120' r='32' fill='%23ff2a8d' opacity='0.25'/><polygon points='234,106 254,120 234,134' fill='%23ff2a8d'/><text x='50%' y='180' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='700' text-anchor='middle'>LINKADDA VIP</text></svg>";
-      return `<img src="${cleanUrl}" alt="${esc(title)}" loading="${isEager ? 'eager' : 'lazy'}" decoding="async" draggable="false" class="fk-card-img" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}else if(!this._failedSvg){this._failedSvg=true; this.src='${defaultSvg}';}" />`;
+      const placeholderSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3C/svg%3E";
+      if (isSecondary) {
+        return `<img src="${placeholderSvg}" data-src="${cleanUrl}" alt="${esc(title)}" loading="lazy" decoding="async" fetchpriority="low" draggable="false" class="fk-card-img fk-card-img-lazy" data-fallback="${esc(localFallback)}" onload="this.classList.add('is-loaded'); this.closest('.fk-card')?.classList.add('is-seen');" onerror="window.handleCardImgError(this);" />`;
+      }
+      return `<img src="${cleanUrl}" alt="${esc(title)}" loading="${isEager ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${isEager ? 'high' : 'low'}" draggable="false" class="fk-card-img" data-fallback="${esc(localFallback)}" onload="this.classList.add('is-loaded'); this.closest('.fk-card')?.classList.add('is-seen');" onerror="window.handleCardImgError(this);" />`;
     }
 
     return `<div class="fk-card" data-fb-id="${esc(id)}" data-slug="${esc(cat.slug||'')}" data-product-id="${esc(id)}" id="product-${esc(id)}">
@@ -3048,7 +3083,7 @@
         <div class="fk-card-slides-track">
           ${images.map((imgUrl, idx) => `
             <div class="fk-card-slide${idx === 0 ? ' is-active' : ''}" data-idx="${idx}">
-              ${makeCardImgHtml(imgUrl, baseTitle, idx === 0)}
+              ${makeCardImgHtml(imgUrl, baseTitle, (cardIndex < 4 && idx === 0), idx > 0)}
             </div>
           `).join('')}
         </div>
@@ -3064,7 +3099,7 @@
       </div>
       ` : `
       <div class="fk-card-media" onclick="window.openFkProductPage('${esc(id)}')">
-        ${makeCardImgHtml(firstImg, baseTitle, false)}
+        ${makeCardImgHtml(firstImg, baseTitle, cardIndex < 4)}
         <div class="fk-card-media-gradient"></div>
         <div class="fk-card-quick-view-overlay"><i class="fa-solid fa-expand"></i> Quick View</div>
       </div>
@@ -3377,8 +3412,20 @@
   // ══════════════════════════════════════════════════════════════════
   let activeCardSlideshowObserver = null;
 
+  function ensureCardMediaLoaded(mediaEl) {
+    if (!mediaEl) return;
+    const lazyImgs = mediaEl.querySelectorAll('img[data-src]');
+    lazyImgs.forEach(img => {
+      if (img.dataset.src) {
+        img.src = img.dataset.src;
+        img.removeAttribute('data-src');
+      }
+    });
+  }
+
   function goToCardSlide(mediaEl, targetIdx) {
     if (!mediaEl) return;
+    ensureCardMediaLoaded(mediaEl);
     const slides = mediaEl.querySelectorAll('.fk-card-slide');
     const bars = mediaEl.querySelectorAll('.fk-slide-bar');
     const total = slides.length;
@@ -3476,6 +3523,7 @@
     if (!card) return;
     const mediaEl = card.querySelector('.fk-card-slideshow');
     if (!mediaEl) return;
+    ensureCardMediaLoaded(mediaEl);
     const curIdx = parseInt(mediaEl.dataset.activeIdx || '0', 10);
     goToCardSlide(mediaEl, curIdx + delta);
     restartCardTimer(mediaEl);
@@ -3486,6 +3534,7 @@
     if (!card) return;
     const mediaEl = card.querySelector('.fk-card-slideshow');
     if (!mediaEl) return;
+    ensureCardMediaLoaded(mediaEl);
     goToCardSlide(mediaEl, targetIdx);
     restartCardTimer(mediaEl);
   };
@@ -3499,13 +3548,44 @@
     const cardSlideshows = document.querySelectorAll('.fk-card-slideshow');
     if (!cardSlideshows.length) return;
 
+    if ('IntersectionObserver' in window && !activeCardSlideshowObserver) {
+      activeCardSlideshowObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          const mediaEl = entry.target;
+          if (entry.isIntersecting) {
+            mediaEl.closest('.fk-card')?.classList.add('is-seen');
+          } else {
+            stopCardTimer(mediaEl);
+          }
+        });
+      }, { rootMargin: '250px 0px 250px 0px', threshold: 0 });
+    }
+
+    if ('IntersectionObserver' in window) {
+      if (!window._cardSeenObserver) {
+        window._cardSeenObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-seen');
+            }
+          });
+        }, { rootMargin: '300px 0px 300px 0px', threshold: 0 });
+      }
+      document.querySelectorAll('.fk-card, .pcard').forEach(card => window._cardSeenObserver.observe(card));
+    }
+
     cardSlideshows.forEach((mediaEl, index) => {
       mediaEl.dataset.cardOrder = String(index);
+
+      if (activeCardSlideshowObserver) {
+        activeCardSlideshowObserver.observe(mediaEl);
+      }
 
       // Hover preview: start auto-cycling on mouse hover only
       if (!mediaEl._hasHoverListener) {
         mediaEl._hasHoverListener = true;
         mediaEl.addEventListener('mouseenter', () => {
+          ensureCardMediaLoaded(mediaEl);
           mediaEl._isHovered = true;
           startCardTimer(mediaEl, 1500);
         });
@@ -3521,6 +3601,7 @@
         let touchStartX = 0;
         let touchStartY = 0;
         mediaEl.addEventListener('touchstart', (e) => {
+          ensureCardMediaLoaded(mediaEl);
           if (e.touches && e.touches[0]) {
             touchStartX = e.touches[0].screenX;
             touchStartY = e.touches[0].screenY;
@@ -3857,17 +3938,17 @@
           // If a category has no products, fallback to showing all products with a friendly hint
           records = getLiveRecords();
           if (records.length) {
-            grid.innerHTML = records.map(item => {
-              try { return buildCard(item.id, item); } catch (e) { return ''; }
+            grid.innerHTML = records.map((item, idx) => {
+              try { return buildCard(item.id, item, idx); } catch (e) { return ''; }
             }).join('');
           } else {
             grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--muted); font-size: 14px;">No products found in this category.</div>';
           }
         }
       } else {
-        grid.innerHTML = records.map(item => {
+        grid.innerHTML = records.map((item, idx) => {
           try {
-            return buildCard(item.id, item);
+            return buildCard(item.id, item, idx);
           } catch (e) {
             console.error('Error rendering card for product:', item, e);
             return '';
@@ -3926,8 +4007,24 @@
     } catch (_) {}
 
     if (localData) {
-      if (localData.products && Object.keys(localData.products).length >= Object.keys(liveCollections.products).length) {
-        liveCollections.products = Object.assign({}, liveCollections.products, localData.products);
+      if (localData.products && typeof localData.products === 'object') {
+        Object.keys(localData.products).forEach(id => {
+          if (liveCollections.products[id]) {
+            const freshProd = localData.products[id];
+            const preloadProd = liveCollections.products[id];
+            liveCollections.products[id] = Object.assign({}, preloadProd, freshProd);
+            // Ensure unique, validated local image from preload is preserved over broken remote URLs
+            if (!freshProd.image || freshProd.image.startsWith('http')) {
+              liveCollections.products[id].image = preloadProd.image;
+              liveCollections.products[id].thumbnail = preloadProd.thumbnail || preloadProd.image;
+              if (preloadProd.images && preloadProd.images.length) {
+                liveCollections.products[id].images = [preloadProd.image, ...(freshProd.images || []).filter(u => u !== preloadProd.image)];
+              }
+            }
+          } else {
+            liveCollections.products[id] = localData.products[id];
+          }
+        });
       }
       if (localData.categories && Object.keys(localData.categories).length) {
         liveCollections.categories = Object.assign({}, liveCollections.categories, localData.categories);

@@ -100,8 +100,8 @@ function getLocalFallback(value, el = null) {
 
   // Smart deterministic fallback for generated upload filenames:
   if (el) {
-    const card = el.closest('.pcard, .category-card');
-    const title = card?.querySelector('.pcard-title, h3, .pcard-pill')?.textContent?.trim() || el.alt || '';
+    const card = el.closest('.pcard, .category-card, .fk-card');
+    const title = card?.querySelector('.pcard-title, .fk-card-title, h3, .pcard-pill')?.textContent?.trim() || el.alt || '';
     if (title) {
       let hash = 0;
       for (let i = 0; i < title.length; i++) hash = (hash << 5) - hash + title.charCodeAt(i);
@@ -126,7 +126,6 @@ function initPreseededTable() {
 
     const supabaseUrl = `${STORAGE_BASE}/${folder}/${file}`;
     const legacyRustfs = `https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media/${folder}/${file}`;
-    const legacySupa = `https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media/${folder}/${file}`;
     const localPath = `images/${file}`;
 
     normalizeKeys(file).forEach((k) => {
@@ -143,11 +142,6 @@ function initPreseededTable() {
       mediaMap.set(k, supabaseUrl);
       fallbackMap.set(k, localPath);
     });
-
-    normalizeKeys(legacySupa).forEach((k) => {
-      mediaMap.set(k, supabaseUrl);
-      fallbackMap.set(k, localPath);
-    });
   });
 }
 
@@ -159,8 +153,9 @@ function indexRecord(record) {
   if (primaryUrl.includes('rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media')) {
     primaryUrl = primaryUrl.replace('https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media', STORAGE_BASE);
   }
-  if (primaryUrl.includes('noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media')) {
-    primaryUrl = primaryUrl.replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media', STORAGE_BASE);
+  if (primaryUrl.includes('supabase.co/storage/v1/object/public/') && !primaryUrl.includes('dsleaglxbedljdxrikdn')) {
+    const pathPart = primaryUrl.split('/public/').pop().split('/').slice(1).join('/');
+    primaryUrl = `${STORAGE_BASE}/${pathPart.replace(/^\/+/, '')}`;
   }
 
   const localUrl = getLocalFallback(primaryUrl) || getLocalFallback(record.sourcePath) || getLocalFallback(record.name);
@@ -268,7 +263,12 @@ function updateImage(el) {
       }
 
       // 4. Deterministic pool fallback for products
-      const poolFallback = `images/${PRODUCT_PHOTOS[(retries * 7) % PRODUCT_PHOTOS.length]}`;
+      const card = this.closest('.fk-card, .pcard, .category-card');
+      const seedKey = card?.dataset?.productId || card?.dataset?.fbId || this.alt || this.dataset?.fallback || currentSrc;
+      let hash = 0;
+      for (let i = 0; i < seedKey.length; i++) hash = (hash << 5) - hash + seedKey.charCodeAt(i);
+      const photoIdx = (Math.abs(hash) + retries * 3) % PRODUCT_PHOTOS.length;
+      const poolFallback = `images/${PRODUCT_PHOTOS[photoIdx]}`;
       if (!currentSrc.endsWith(poolFallback)) {
         this.src = poolFallback;
         return;
@@ -289,24 +289,26 @@ function updateImage(el) {
       el.setAttribute('src', local);
       return;
     }
+    // If it's already a local bundled image (starts with images/ or /images/), preserve it!
+    // Never rewrite local bundled images to remote URLs.
+    return;
   }
 
-  // If it's an old Hostinger or old Supabase URL, seamlessly rewrite to active Supabase bucket
-  if (current.includes('rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media') || current.includes('noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media')) {
-    const next = current
-      .replace('https://rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media', STORAGE_BASE)
-      .replace('https://noecylfqhtfwbjfkjxoo.supabase.co/storage/v1/object/public/media', STORAGE_BASE);
+  // If it's an old Hostinger or non-Linkadda Supabase URL, seamlessly rewrite to active Supabase bucket
+  if (current.includes('rustfs-mi5c.srv1942099.hstgr.cloud/linkadda-media') || (current.includes('supabase.co/storage/v1/object/public/') && !current.includes('dsleaglxbedljdxrikdn'))) {
+    const pathPart = current.split('/linkadda-media/').pop() || current.split('/public/').pop().split('/').slice(1).join('/');
+    const next = `${STORAGE_BASE}/${pathPart.replace(/^\/+/, '')}`;
     el.dataset.resolvedSrc = next;
     el.setAttribute('src', next);
     return;
   }
 
-    const next = resolveValue(current);
-    if (next && next !== current && el.dataset.resolvedSrc !== next && el.getAttribute('src') !== next) {
-      el.dataset.resolvedSrc = next;
-      el.setAttribute('src', next);
-    }
+  const next = resolveValue(current);
+  if (next && next !== current && el.dataset.resolvedSrc !== next && el.getAttribute('src') !== next) {
+    el.dataset.resolvedSrc = next;
+    el.setAttribute('src', next);
   }
+}
 
   function syncDocument() {
     document.querySelectorAll('img, source').forEach(updateImage);

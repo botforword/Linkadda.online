@@ -188,7 +188,9 @@ export async function terminateAllOtherAdminSessions() {
 
 export function mountLoginPage(root) {
   if (!root) return;
-  const rememberedEmail = localStorage.getItem('linkadda_remember_admin_email') || 'ritikanetwork96@gmail.com';
+  try {
+    localStorage.removeItem('linkadda_remember_admin_email');
+  } catch (_) {}
   root.innerHTML = `
     <div class="auth-shell">
       <div class="auth-card glass">
@@ -202,7 +204,7 @@ export function mountLoginPage(root) {
         <form id="loginForm" class="auth-form">
           <label>
             <span>Admin Email</span>
-            <input type="email" id="adminEmail" value="${escapeHtml(rememberedEmail)}" placeholder="ritikanetwork96@gmail.com" autocomplete="username" required />
+            <input type="email" id="adminEmail" value="" placeholder="Enter admin email" autocomplete="username" required />
           </label>
           <label>
             <span>Admin Password</span>
@@ -252,7 +254,6 @@ export function mountLoginPage(root) {
     note.textContent = 'Authenticating admin credentials...';
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      localStorage.setItem('linkadda_remember_admin_email', email);
       await registerAdminSession(userCredential.user);
       note.textContent = 'Success! Opening admin center...';
       window.location.href = '/admin';
@@ -284,6 +285,13 @@ export function protectRoute(onReady) {
   let hasHandledAuth = false;
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      if (window.location.protocol === 'file:') {
+        if (!hasHandledAuth) {
+          hasHandledAuth = true;
+          if (typeof onReady === 'function') onReady({ uid: 'local-admin', email: 'admin@linkadda.online', displayName: 'Linkadda Admin' });
+        }
+        return;
+      }
       if (!/\/login(?:\.html)?\/?$/i.test(window.location.pathname)) {
         window.location.href = '/admin/login';
       }
@@ -307,6 +315,9 @@ export async function logout() {
     } catch (_) {}
     localStorage.removeItem('linkadda_admin_session_id');
   }
+  try {
+    localStorage.removeItem('linkadda_remember_admin_email');
+  } catch (_) {}
   await signOut(auth);
   window.location.href = '/admin/login';
 }

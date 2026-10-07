@@ -630,11 +630,12 @@ body.linkadda-store {
     padding: 10px 0 !important;
   }
   /* ===== APPLE DESIGN SYSTEM: PRODUCT CARDS & BUTTONS (MOBILE) ===== */
+  /* ===== APPLE DESIGN SYSTEM: PRODUCT CARDS & BUTTONS (MOBILE) ===== */
   .fk-card {
     border-radius: 18px !important;
-    background: rgba(18, 17, 28, 0.8) !important;
-    backdrop-filter: blur(24px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    background: rgba(18, 17, 28, 0.95) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.42) !important;
     display: flex !important;
@@ -642,12 +643,17 @@ body.linkadda-store {
     overflow: hidden !important;
     position: relative !important;
     transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease !important;
+    content-visibility: auto !important;
+    contain-intrinsic-size: 0 420px !important;
+    transform: translateZ(0) !important;
   }
   .fk-card:active {
     transform: scale(0.98) !important;
   }
   [data-theme="light"] .fk-card {
     background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 18px !important;
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04), 0 10px 24px -4px rgba(15, 23, 42, 0.08) !important;
@@ -660,7 +666,8 @@ body.linkadda-store {
     margin: 6px 6px 0 6px !important;
     border-radius: 14px !important;
     aspect-ratio: 1 / 1 !important;
-    background: #090a12 !important;
+    background: #090a12 linear-gradient(90deg, #090a12 0%, #151324 50%, #090a12 100%) !important;
+    background-size: 200% 100% !important;
     position: relative !important;
     overflow: hidden !important;
     display: flex !important;
@@ -669,7 +676,8 @@ body.linkadda-store {
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
   }
   [data-theme="light"] .fk-card-media {
-    background: #f8fafc !important;
+    background: #f8fafc linear-gradient(90deg, #f8fafc 0%, #edf2f7 50%, #f8fafc 100%) !important;
+    background-size: 200% 100% !important;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
   }
   .fk-card-media img {
@@ -707,9 +715,9 @@ body.linkadda-store {
     font-size: 8.5px !important;
     font-weight: 750 !important;
     border-radius: 9999px !important;
-    background: rgba(15, 23, 42, 0.82) !important;
-    backdrop-filter: blur(16px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    background: rgba(15, 23, 42, 0.92) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     color: #ffffff !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -727,9 +735,9 @@ body.linkadda-store {
     font-size: 8px !important;
   }
   [data-theme="light"] .fk-card-badge-vip:not(.badge-color-red):not(.badge-red):not(.badge-color-gold):not(.badge-gold):not(.pcard-pill-gold):not(.badge-color-white):not(.badge-white) {
-    background: rgba(15, 23, 42, 0.84) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.24) !important;
     color: #ffffff !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
@@ -761,9 +769,9 @@ body.linkadda-store {
     width: 32px !important;
     height: 32px !important;
     border-radius: 50% !important;
-    background: rgba(18, 16, 26, 0.72) !important;
-    backdrop-filter: blur(16px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    background: rgba(18, 16, 26, 0.92) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     display: flex !important;
     align-items: center !important;
@@ -780,9 +788,9 @@ body.linkadda-store {
   }
   [data-theme="light"] .fk-card-action-circle,
   [data-theme="light"] .fk-card-wishlist-btn {
-    background: rgba(255, 255, 255, 0.94) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(0, 0, 0, 0.08) !important;
     color: #64748b !important;
     box-shadow: 0 3px 12px rgba(15, 23, 42, 0.12), inset 0 1px 0 #ffffff !important;
@@ -5513,8 +5521,7 @@ body.linkadda-store,
   }
 }
 
-/* Apple VIP Frosted Badges */
-.fk-card-badge-vip,
+/* Apple VIP Badges */
 .fk-verified-badge,
 .auth-brand-badge {
   border-radius: 9999px !important;
@@ -5533,5 +5540,57 @@ body.linkadda-store,
   -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
 }
+
+/* ===== PERFORMANCE & ZERO-LAG COMPOSITING ENGINE ===== */
+.fk-card,
+.pcard {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 420px;
+  transform: translateZ(0);
+}
+
+/* Once scrolled/seen, lock into memory so scrolling back up is 100% instant with zero reload/flicker */
+.fk-card.is-seen,
+.pcard.is-seen {
+  content-visibility: visible !important;
+  contain-intrinsic-size: auto !important;
+}
+
+.fk-card-media {
+  background: #11101a linear-gradient(90deg, #11101a 0%, #1a182c 50%, #11101a 100%) !important;
+  background-size: 200% 100% !important;
+}
+
+.fk-card-img {
+  will-change: opacity;
+}
+
+.fk-card-img.is-loaded {
+  opacity: 1 !important;
+  transition: none !important;
+}
+
+@media (max-width: 768px) {
+  .fk-card,
+  .pcard {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  [data-theme="light"] .fk-card,
+  [data-theme="light"] .pcard {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .fk-card-badge-vip,
+  .fk-card-top-actions .fk-card-action-circle,
+  .fk-card-top-actions .fk-card-wishlist-btn,
+  .fk-card-quick-view-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 
 

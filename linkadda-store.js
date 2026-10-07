@@ -541,8 +541,8 @@
     const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
     images = [...new Set(images)].map((u) => {
       let str = String(u || '').trim();
-      if (str.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || str.includes('noecylfqhtfwbjfkjxoo.supabase.co')) {
-        const pathPart = str.split('/linkadda-media/').pop() || str.split('/media/').pop() || str.split('/').pop();
+      if (str.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || (str.includes('supabase.co') && !str.includes('dsleaglxbedljdxrikdn'))) {
+        const pathPart = str.split('/linkadda-media/').pop() || str.split('/public/').pop() || str.split('/').pop();
         return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
       }
       if (str.startsWith('products/') || str.startsWith('categories/')) {

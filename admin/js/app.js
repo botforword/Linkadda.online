@@ -729,7 +729,7 @@ function resolveAdminMediaUrl(url) {
   let clean = String(url || '').trim();
   const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
   if (!clean) return '';
-  if (clean.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || clean.includes('noecylfqhtfwbjfkjxoo.supabase.co')) {
+  if (clean.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || clean.includes('supabase.co/storage/v1/object/public/')) {
     const pathPart = clean.split('/linkadda-media/').pop() || clean.split('/media/').pop() || clean.split('/').pop();
     return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
   }
@@ -3621,7 +3621,7 @@ function resolveMediaSource(value) {
   if (!raw) return '';
   
   const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
-  if (raw.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || raw.includes('noecylfqhtfwbjfkjxoo.supabase.co') || raw.includes('s3.linkadda.shop/linkadda-media')) {
+  if (raw.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || raw.includes('s3.linkadda.shop/linkadda-media') || (raw.includes('supabase.co') && !raw.includes('dsleaglxbedljdxrikdn'))) {
     const pathPart = raw.split('/linkadda-media/').pop() || raw.split('/media/').pop() || raw.split('/').pop();
     return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
   }
@@ -3632,7 +3632,7 @@ function resolveMediaSource(value) {
   const match = listCollection('media').find((item) => mediaMatchesReference(item, normalized) || mediaMatchesReference(item, raw));
   if (match?.publicUrl) {
     let u = match.publicUrl;
-    if (u.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || u.includes('noecylfqhtfwbjfkjxoo.supabase.co') || u.includes('s3.linkadda.shop/linkadda-media')) {
+    if (u.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || u.includes('s3.linkadda.shop/linkadda-media') || (u.includes('supabase.co') && !u.includes('dsleaglxbedljdxrikdn'))) {
       const pathPart = u.split('/linkadda-media/').pop() || u.split('/media/').pop() || u.split('/').pop();
       return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
     }
@@ -3642,6 +3642,10 @@ function resolveMediaSource(value) {
     return `${SUPABASE_CDN_ROOT}/${raw}`;
   }
   if (raw.startsWith('images/') || raw.startsWith('/images/')) {
+    const isFile = typeof window !== 'undefined' && window.location.protocol === 'file:';
+    if (isFile) {
+      return raw.startsWith('/') ? `..${raw}` : `../${raw}`;
+    }
     return raw.startsWith('/') ? raw : `/${raw}`;
   }
   return `${SUPABASE_CDN_ROOT}/products/${raw.replace(/^\/+/, '')}`;
@@ -3683,8 +3687,9 @@ function mediaPreview(item) {
     return `<video class="thumb-media" src="${escapeHtml(src)}" preload="none" muted loop playsinline></video>`;
   }
   const fn = src.split('/').pop().split('?')[0];
-  const localFallback = `../images/${fn}`;
-  return `<img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.title || item.name || 'Preview')}" loading="lazy" decoding="async" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}" />`;
+  const isFile = typeof window !== 'undefined' && window.location.protocol === 'file:';
+  const localFallback = isFile ? `../images/${fn}` : `/images/${fn}`;
+  return `<img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.title || item.name || 'Preview')}" loading="lazy" decoding="async" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}else if(!this._failed){this._failed=true; this.src='/favicon.svg';}" />`;
 }
 
 function renderDataPill(label, value) {
@@ -6187,7 +6192,7 @@ function renderActiveSessionsSection(sessions = []) {
 
 function renderSettingsManagementView(data = {}, fullData = {}) {
   const settings = fullData.settings || {};
-  const currentEmail = userEmail?.textContent && userEmail.textContent !== 'connected' ? userEmail.textContent : 'ritikanetwork96@gmail.com';
+  const currentEmail = userEmail?.textContent && userEmail.textContent !== 'connected' && !/jaigram|jai/i.test(userEmail.textContent) ? userEmail.textContent : 'admin@linkadda.online';
   
   // Trigger async fetch for live sessions list if not already loaded
   if (!ui.sessionsLoaded) {
@@ -6272,7 +6277,7 @@ function renderSettingsManagementView(data = {}, fullData = {}) {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;">
             <div>
               <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.04em;">Store / Website Name</label>
-              <input type="text" name="siteName" value="${escapeHtml(settings.siteName || 'Linkadda Online')}" class="input" style="width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;" placeholder="e.g. Linkadda Online" required />
+              <input type="text" name="siteName" value="${escapeHtml((settings.siteName && !/jaigram|jai/i.test(settings.siteName)) ? settings.siteName : 'Linkadda Online')}" class="input" style="width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px;" placeholder="e.g. Linkadda Online" required />
               <small style="display: block; color: var(--muted); font-size: 11px; margin-top: 4px;">Shown in navbar and browser tab.</small>
             </div>
 
@@ -9636,9 +9641,19 @@ function applyRoute(path) {
 }
 
 function syncTopbar(user) {
-  userName.textContent = user.displayName || 'Admin';
-  userEmail.textContent = user.email || 'connected';
-  userAvatar.textContent = (user.email || 'A').slice(0, 1).toUpperCase();
+  let displayName = (user && user.displayName) ? String(user.displayName).trim() : '';
+  if (!displayName || /jaigram|jai/i.test(displayName)) {
+    displayName = 'Linkadda Admin';
+    try {
+      if (user && typeof user.updateProfile === 'function') {
+        user.updateProfile({ displayName: 'Linkadda Admin' }).catch(() => {});
+      }
+    } catch (_) {}
+  }
+  userName.textContent = displayName;
+  const rawEmail = (user && user.email) ? String(user.email).trim() : 'connected';
+  userEmail.textContent = rawEmail;
+  userAvatar.textContent = (displayName || rawEmail || 'L').slice(0, 1).toUpperCase();
 }
 
 function initRouteHandling() {
@@ -9652,6 +9667,45 @@ function initRouteHandling() {
     if (!isMobileViewport()) closeSidebar();
   });
   updateRoute();
+}
+
+function confirmLogoutDialog() {
+  openModal(`
+    <div class="confirm-dialog" style="max-width: 420px; width: 100%; box-sizing: border-box;">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.28); display: flex; align-items: center; justify-content: center; color: #ef4444; flex-shrink: 0;">
+            <i data-lucide="log-out" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.3;">Log Out of Admin?</h3>
+            <p style="margin: 2px 0 0 0; font-size: 12.5px; color: var(--muted);">Are you sure you want to end your session?</p>
+          </div>
+        </div>
+        <button class="btn btn-ghost icon-only" data-close-modal type="button" aria-label="Close" style="width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;">
+          <i data-lucide="x" style="width: 17px; height: 17px;"></i>
+        </button>
+      </div>
+
+      <p style="font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.5;">
+        You will be signed out and returned to the admin login page. Any unsaved changes may be lost.
+      </p>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+        <button class="btn btn-ghost" data-close-modal type="button" style="padding: 8px 16px; font-size: 13px; font-weight: 500;">
+          Cancel
+        </button>
+        <button class="btn btn-danger" id="confirmLogoutSubmitBtn" type="button" style="padding: 8px 18px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px;">
+          <i data-lucide="log-out" style="width: 15px; height: 15px;"></i> Logout
+        </button>
+      </div>
+    </div>
+  `);
+
+  document.getElementById('confirmLogoutSubmitBtn')?.addEventListener('click', async () => {
+    closeModal();
+    await logout();
+  });
 }
 
 function attachGlobalHandlers() {
@@ -9681,8 +9735,8 @@ function attachGlobalHandlers() {
 
   document.getElementById('themeBtn')?.addEventListener('click', toggleTheme);
   document.getElementById('sidebarThemeBtn')?.addEventListener('click', toggleTheme);
-  document.getElementById('logoutBtn')?.addEventListener('click', logout);
-  document.getElementById('sidebarLogoutBtn')?.addEventListener('click', logout);
+  document.getElementById('logoutBtn')?.addEventListener('click', confirmLogoutDialog);
+  document.getElementById('sidebarLogoutBtn')?.addEventListener('click', confirmLogoutDialog);
   document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
   sidebarCloseBtn?.addEventListener('click', closeSidebar);
   sidebarOverlay?.addEventListener('click', closeSidebar);
@@ -11199,7 +11253,7 @@ function attachGlobalHandlers() {
     if (action === 'palette') {
       const next = actionBtn.dataset.paletteAction;
       if (next.startsWith('goto:')) window.location.hash = `#/${next.split(':')[1]}`;
-      if (next === 'logout') logout();
+      if (next === 'logout') confirmLogoutDialog();
     }
   });
 
@@ -11562,7 +11616,7 @@ function attachGlobalHandlers() {
         }
         openRecordEditor(node, collectionSchemas[node]);
       } else if (action === 'logout') {
-        logout();
+        confirmLogoutDialog();
       }
       closePalette();
     }

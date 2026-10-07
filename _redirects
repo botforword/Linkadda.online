@@ -13,3 +13,7 @@
 /package.json / 302
 /package-lock.json / 302
 /dev-server.mjs / 302
+
+# 3. Supabase Storage Global Edge CDN Proxy (Cached with Cloudflare Immutable CDN)
+/media/* https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media/:splat 200
+

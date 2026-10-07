@@ -5596,9 +5596,9 @@ body.in-search-view #fkMobileAppbar,
     width: 30px !important;
     height: 30px !important;
     border-radius: 50% !important;
-    background: rgba(14, 11, 24, 0.75) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
+    background: rgba(14, 11, 24, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.18) !important;
     position: absolute !important;
     top: 6px !important;
@@ -5634,9 +5634,9 @@ body.in-search-view #fkMobileAppbar,
     font-size: 0.65rem !important;
     font-weight: 800 !important;
     border-radius: 9999px !important;
-    background: rgba(15, 23, 42, 0.8) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
+    background: rgba(15, 23, 42, 0.94) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: #ffffff !important;
     z-index: 8 !important;
