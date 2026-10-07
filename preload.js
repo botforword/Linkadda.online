@@ -204,12 +204,12 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
         '</div>' +
         '<div class="fk-card-price-row">' +
           '<div class="fk-dual-price">' +
-            '<span class="fk-price-inr">â‚¹' + cleanINR + '</span>' +
+            '<span class="fk-price-inr">₹' + cleanINR + '</span>' +
             '<span class="fk-price-sep">/</span>' +
             '<span class="fk-price-usd">$' + cleanUSD + '</span>' +
           '</div>' +
           '<div class="fk-price-sub-row">' +
-            '<span class="fk-mrp-cut">â‚¹' + mrpINR + '</span>' +
+            '<span class="fk-mrp-cut">₹' + mrpINR + '</span>' +
             '<span class="fk-discount-tag">' + discountPercent + '% OFF</span>' +
           '</div>' +
         '</div>' +
