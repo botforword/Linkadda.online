@@ -479,6 +479,20 @@ function navMarkup() {
   `).join('');
 }
 
+function updateSideNavActive(currentRoute) {
+  if (!sideNav) return;
+  if (!sideNav.children.length) {
+    sideNav.innerHTML = navMarkup();
+    if (window.lucide) lucide.createIcons({ root: sideNav });
+  } else {
+    sideNav.querySelectorAll('.nav-link').forEach((link) => {
+      const r = link.dataset.route;
+      const isActive = r === currentRoute || ((currentRoute === 'products' || currentRoute === 'categories') && r === 'catalog');
+      link.classList.toggle('active', isActive);
+    });
+  }
+}
+
 function collectionRowBadge(item) {
   const status = String(item.status || 'active').toLowerCase();
   if (status === 'active') return '<span class="badge success">Active</span>';
@@ -3708,16 +3722,20 @@ function getCatalogItems(node) {
 function getCatalogCounts() {
   const products = listCollection('products').filter((item) => item.status !== 'deleted');
   const categories = listCollection('categories').filter((item) => item.status !== 'deleted');
-  const allMedia = getAllUnifiedMediaItems(ui.data || {});
-  const mStats = mediaStats(allMedia);
-  const latestStamp = [...products, ...categories, ...allMedia]
-    .map((item) => Number(item.updatedAt || item.createdAt || 0))
-    .filter(Boolean)
-    .sort((a, b) => b - a)[0] || 0;
+  let latestStamp = 0;
+  for (let i = 0; i < products.length; i++) {
+    const t = Number(products[i].updatedAt || products[i].createdAt || 0);
+    if (t > latestStamp) latestStamp = t;
+  }
+  for (let i = 0; i < categories.length; i++) {
+    const t = Number(categories[i].updatedAt || categories[i].createdAt || 0);
+    if (t > latestStamp) latestStamp = t;
+  }
+  const mediaCount = _unifiedMediaCache ? _unifiedMediaCache.filter((m) => m.status !== 'deleted').length : (listCollection('media').length || 0);
   return {
     products: products.length,
     categories: categories.length,
-    images: mStats.active,
+    images: mediaCount,
     lastSync: latestStamp,
   };
 }
@@ -7577,335 +7595,7 @@ function renderScreenshotsGalleryView(data = {}, fullData = {}) {
   `;
 }
 
-let _usersLoading = false;
-let _usersCache = null;
-let _usersLastFetched = 0;
 
-async function fetchUsersForAdmin(force = false) {
-  if (_usersLoading) return;
-  if (!force && _usersCache && Date.now() - _usersLastFetched < 30000) {
-    return _usersCache;
-  }
-  _usersLoading = true;
-  try {
-    // Try API endpoint first (works on Vercel deployment)
-    const adminHeaders = await getAdminTokenHeader();
-    const res = await fetch('/api/auth/customer?all=true', {
-      headers: adminHeaders,
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && Array.isArray(data.users) && data.users.length > 0) {
-        _usersCache = data.users;
-        _usersLastFetched = Date.now();
-        if (ui.route === 'users') renderView(ui.data || {});
-        return _usersCache;
-      }
-    }
-  } catch (err) {
-    console.warn('API fetch failed, using live RTDB data:', err?.message);
-  } finally {
-    _usersLoading = false;
-  }
-  // Fallback: build from live RTDB data (always available)
-  _usersCache = _buildUsersFromLiveData(ui.data || {});
-  _usersLastFetched = Date.now();
-  if (ui.route === 'users') renderView(ui.data || {});
-  return _usersCache;
-}
-
-function _buildUsersFromLiveData(data) {
-  const userMap = new Map();
-
-  // Source 1: events/customers (realtime subscribed)
-  const evtCustomers = data.events?.customers || data.events?.Customers || {};
-  if (evtCustomers && typeof evtCustomers === 'object') {
-    Object.entries(evtCustomers).forEach(([key, u]) => {
-      if (u && u.email) {
-        const k = u.email.toLowerCase().trim();
-        userMap.set(k, { uid: key, ...u });
-      } else if (u && key.startsWith('cust_')) {
-        // Customer record without email field — use UID as key
-        userMap.set(key, { uid: key, ...u });
-      }
-    });
-  }
-
-  // Source 2: customers (realtime subscribed)
-  const directCustomers = data.customers || {};
-  if (directCustomers && typeof directCustomers === 'object') {
-    Object.entries(directCustomers).forEach(([key, u]) => {
-      if (u && u.email) {
-        const k = u.email.toLowerCase().trim();
-        const existing = userMap.get(k);
-        userMap.set(k, { uid: key, ...existing, ...u });
-      } else if (u && key.startsWith('cust_')) {
-        const existing = userMap.get(key);
-        userMap.set(key, { uid: key, ...existing, ...u });
-      }
-    });
-  }
-
-  // Source 3: Check orders for customer emails not in customers DB
-  const orders = data.orders || {};
-  if (orders && typeof orders === 'object') {
-    Object.values(orders).forEach(order => {
-      if (order && order.email) {
-        const k = order.email.toLowerCase().trim();
-        if (!userMap.has(k)) {
-          userMap.set(k, {
-            email: order.email,
-            displayName: order.name || order.buyerName || order.email.split('@')[0],
-            provider: 'order',
-            verified: true,
-            createdAt: order.date || order.createdAt || order.timestamp || Date.now(),
-          });
-        }
-      }
-    });
-  }
-
-  const list = Array.from(userMap.values());
-  list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  return list;
-}
-
-function exportUsersCsv() {
-  // Build fresh from live data
-  const users = _buildUsersFromLiveData(ui.data || {});
-  if (!users.length) {
-    showToast('No users available to export.');
-    return;
-  }
-  const headers = ['Customer Name', 'Email Address', 'UID', 'Joined Date', 'Auth Providers', 'Status'];
-  const rows = users.map(u => [
-    `"${String(u.displayName || 'Customer').replace(/"/g, '""')}"`,
-    `"${String(u.email || '').replace(/"/g, '""')}"`,
-    `"${String(u.uid || '').replace(/"/g, '""')}"`,
-    `"${u.createdAt ? new Date(u.createdAt).toISOString() : ''}"`,
-    `"${Array.isArray(u.providers) ? u.providers.join('; ') : (u.provider || '')}"`,
-    `"${u.verified !== false ? 'Verified Member' : 'Pending'}"`
-  ]);
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `linkadda_users_${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  showToast(`Exported ${users.length} users to CSV!`);
-}
-
-function renderUsersManagementView(data = {}, fullData = {}) {
-  // Build users list directly from live RTDB data — no API dependency
-  const allUsers = _buildUsersFromLiveData(data);
-
-  const totalCount = allUsers.length;
-  const googleCount = allUsers.filter(u => (u.providers && u.providers.includes('google')) || u.provider === 'google').length;
-  const otpCount = allUsers.filter(u => (u.providers && u.providers.includes('email_otp')) || u.provider === 'email_otp').length;
-  const verifiedCount = allUsers.filter(u => u.verified !== false).length;
-
-  const searchTerm = String(ui.usersSearch || '').toLowerCase().trim();
-  const providerFilter = ui.usersProvider || 'all';
-
-  let filtered = allUsers;
-  if (searchTerm) {
-    filtered = filtered.filter(u => {
-      const name = String(u.displayName || '').toLowerCase();
-      const email = String(u.email || '').toLowerCase();
-      const uid = String(u.uid || '').toLowerCase();
-      return name.includes(searchTerm) || email.includes(searchTerm) || uid.includes(searchTerm);
-    });
-  }
-
-  if (providerFilter === 'google') {
-    filtered = filtered.filter(u => (u.providers && u.providers.includes('google')) || u.provider === 'google');
-  } else if (providerFilter === 'email_otp') {
-    filtered = filtered.filter(u => (u.providers && u.providers.includes('email_otp')) || u.provider === 'email_otp');
-  } else if (providerFilter === 'both') {
-    filtered = filtered.filter(u => u.providers && u.providers.includes('google') && u.providers.includes('email_otp'));
-  }
-
-  return `
-    <div class="page active management-page-shell" style="max-width: 1240px; margin: 0 auto; padding-bottom: 60px;">
-      
-      <!-- Top Header -->
-      <section class="panel glass" style="padding: 24px 28px; border-radius: 16px; margin-bottom: 24px; border: 1px solid var(--border);">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-          <div>
-            <div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">User Directory & Growth</div>
-            <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text);">Registered Customers & Users</h2>
-            <p style="margin: 4px 0 0 0; color: var(--muted); font-size: 13px;">Live view of all customers registered via Continue with Google or Email OTP with exact joined dates.</p>
-          </div>
-          <div class="toolbar" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-ghost" type="button" data-action="refresh-users" title="Refresh user list"><i data-lucide="refresh-cw"></i> Refresh</button>
-            <button class="btn btn-ghost" type="button" data-action="export-users-csv" title="Export users to CSV"><i data-lucide="download"></i> Export CSV</button>
-          </div>
-        </div>
-
-        <!-- Metric KPI Cards -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
-          <div style="background: rgba(99, 102, 241, 0.06); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 14px; padding: 16px 18px;">
-            <div style="font-size: 11px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em;">Total Customers</div>
-            <div style="font-size: 26px; font-weight: 800; color: #fff; margin-top: 4px;">${totalCount}</div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Unified registered accounts</div>
-          </div>
-
-          <div style="background: rgba(66, 133, 244, 0.06); border: 1px solid rgba(66, 133, 244, 0.25); border-radius: 14px; padding: 16px 18px;">
-            <div style="font-size: 11px; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.05em;">Google Auth</div>
-            <div style="font-size: 26px; font-weight: 800; color: #93c5fd; margin-top: 4px;">${googleCount}</div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Connected with Google</div>
-          </div>
-
-          <div style="background: rgba(255, 42, 141, 0.06); border: 1px solid rgba(255, 42, 141, 0.25); border-radius: 14px; padding: 16px 18px;">
-            <div style="font-size: 11px; font-weight: 700; color: #ff65a3; text-transform: uppercase; letter-spacing: 0.05em;">Email OTP</div>
-            <div style="font-size: 26px; font-weight: 800; color: #ff8abf; margin-top: 4px;">${otpCount}</div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Verified via OTP code</div>
-          </div>
-
-          <div style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 14px; padding: 16px 18px;">
-            <div style="font-size: 11px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.05em;">Verified Members</div>
-            <div style="font-size: 26px; font-weight: 800; color: #34d399; margin-top: 4px;">${verifiedCount}</div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">100% Active members</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Status / Provider Filter Tabs -->
-      <div class="order-tabs-nav" style="margin-bottom: 18px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <button type="button" class="order-tab-btn ${providerFilter === 'all' ? 'active' : ''}" data-action="set-users-filter" data-filter="all">
-          All Users <span>${totalCount}</span>
-        </button>
-        <button type="button" class="order-tab-btn ${providerFilter === 'google' ? 'active' : ''}" data-action="set-users-filter" data-filter="google">
-          <i data-lucide="chrome" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i> Google Auth <span>${googleCount}</span>
-        </button>
-        <button type="button" class="order-tab-btn ${providerFilter === 'email_otp' ? 'active' : ''}" data-action="set-users-filter" data-filter="email_otp">
-          <i data-lucide="mail" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i> Email OTP <span>${otpCount}</span>
-        </button>
-        <button type="button" class="order-tab-btn ${providerFilter === 'both' ? 'active' : ''}" data-action="set-users-filter" data-filter="both">
-          <i data-lucide="shield-check" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i> Dual Linked
-        </button>
-      </div>
-
-      <!-- Search Bar -->
-      <div class="panel glass" style="padding: 16px 20px; border-radius: 14px; margin-bottom: 20px; border: 1px solid var(--border);">
-        <div style="display: flex; gap: 14px; align-items: center;">
-          <div style="flex: 1; position: relative;">
-            <input class="input" id="usersSearchInput" type="search" placeholder="Search by name, email address, or #LA-UID..." value="${escapeHtml(ui.usersSearch || '')}" style="padding-left: 38px;" />
-            <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 16px; height: 16px;"></i>
-          </div>
-          <span class="chip" style="white-space: nowrap;">${filtered.length} of ${totalCount} users</span>
-        </div>
-      </div>
-
-      <!-- Users Table -->
-      <section class="panel glass" style="border-radius: 16px; border: 1px solid var(--border); overflow: hidden; padding: 0;">
-        <div class="table-wrap" style="margin: 0; max-height: 700px; overflow-y: auto;">
-          <table class="table" style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);">
-                <th style="min-width: 240px; padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--muted);">Customer Name</th>
-                <th style="min-width: 260px; padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--muted);">Email Address</th>
-                <th style="min-width: 200px; padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--muted);">Joined Date</th>
-                <th style="min-width: 180px; padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--muted);">Auth Method</th>
-                <th style="min-width: 140px; padding: 14px 20px; text-align: left; font-size: 11px; text-transform: uppercase; color: var(--muted);">Membership</th>
-                <th style="min-width: 100px; padding: 14px 20px; text-align: right; font-size: 11px; text-transform: uppercase; color: var(--muted);">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filtered.length ? filtered.map((u) => {
-                const name = u.displayName || 'Customer';
-                const email = u.email || '—';
-                const uid = u.uid || '—';
-                const shortUid = uid.startsWith('cust_') ? `#LA-${uid.slice(-6).toUpperCase()}` : uid;
-                const initials = name.slice(0, 2).toUpperCase() || 'CU';
-                const joinedDate = u.createdAt ? new Date(u.createdAt) : new Date();
-                const joinedDateStr = joinedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-                const joinedTimeStr = joinedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                const providers = Array.isArray(u.providers) ? u.providers : (u.provider ? [u.provider] : ['email_otp']);
-                const hasGoogle = providers.includes('google');
-                const hasOtp = providers.includes('email_otp');
-
-                return `
-                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;">
-                    <td style="padding: 16px 20px;">
-                      <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, rgba(255,42,141,0.2), rgba(168,85,247,0.2)); border: 1px solid rgba(255,42,141,0.3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #ff65a3;">
-                          ${escapeHtml(initials)}
-                        </div>
-                        <div>
-                          <div style="font-weight: 750; font-size: 14px; color: #ffffff;">${escapeHtml(name)}</div>
-                          <div style="font-size: 11px; color: var(--muted); font-family: monospace; margin-top: 2px;">${escapeHtml(shortUid)}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style="padding: 16px 20px;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 13px; color: #cbd5e1; font-weight: 600;">${escapeHtml(email)}</span>
-                        <button type="button" class="btn btn-ghost" style="padding: 4px 8px; font-size: 11px;" onclick="copyText('${escapeHtml(email)}'); showToast('Email copied!');" title="Copy Email">
-                          <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
-                        </button>
-                      </div>
-                    </td>
-                    <td style="padding: 16px 20px;">
-                      <div style="display: flex; flex-direction: column; gap: 2px;">
-                        <div style="font-size: 13px; font-weight: 700; color: #ffffff;">
-                          <i data-lucide="calendar" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; color: #ff2a8d; margin-right: 4px;"></i>${escapeHtml(joinedDateStr)}
-                        </div>
-                        <div style="font-size: 11px; color: var(--muted);">${escapeHtml(joinedTimeStr)}</div>
-                      </div>
-                    </td>
-                    <td style="padding: 16px 20px;">
-                      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        ${hasGoogle ? `
-                          <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 8px; font-size: 11px; font-weight: 700; background: rgba(66, 133, 244, 0.12); border: 1px solid rgba(66, 133, 244, 0.3); color: #60a5fa;">
-                            <i data-lucide="chrome" style="width: 11px; height: 11px;"></i> Google
-                          </span>
-                        ` : ''}
-                        ${hasOtp ? `
-                          <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 8px; font-size: 11px; font-weight: 700; background: rgba(255, 42, 141, 0.12); border: 1px solid rgba(255, 42, 141, 0.3); color: #ff65a3;">
-                            <i data-lucide="mail" style="width: 11px; height: 11px;"></i> Email OTP
-                          </span>
-                        ` : ''}
-                      </div>
-                    </td>
-                    <td style="padding: 16px 20px;">
-                      <span style="display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 750; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399;">
-                        <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Verified Member
-                      </span>
-                    </td>
-                    <td style="padding: 16px 20px; text-align: right;">
-                      <button type="button" class="btn btn-ghost" style="padding: 6px 12px; font-size: 12px;" onclick="copyText('${escapeHtml(uid)}'); showToast('Customer UID copied!');" title="Copy User ID">
-                        <i data-lucide="fingerprint" style="width: 13px; height: 13px;"></i> Copy ID
-                      </button>
-                    </td>
-                  </tr>
-                `;
-              }).join('') : `
-                <tr>
-                  <td colspan="6" style="text-align: center; padding: 60px 20px;">
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--muted);">
-                        <i data-lucide="users"></i>
-                      </div>
-                      <h4 style="margin: 0; font-size: 16px; font-weight: 750; color: #fff;">No Customers Found</h4>
-                      <p style="margin: 0; color: var(--muted); font-size: 13px; max-width: 360px;">
-                        ${searchTerm ? 'No registered customers matched your search query. Try clearing filters.' : 'Customers who authenticate with Google or Email OTP will appear here automatically with their joined dates.'}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              `}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-    </div>
-  `;
-}
 
 function listAllReviews(reviewsData = {}, productsMap = {}) {
   const list = [];
@@ -7989,438 +7679,7 @@ function listAllReviews(reviewsData = {}, productsMap = {}) {
   return list.sort((a, b) => (b.createdAt || b.timestamp || 0) - (a.createdAt || a.timestamp || 0));
 }
 
-function renderSellerDetailsModal(seller = {}, allProducts = {}, allOrders = {}) {
-  const sellerId = seller.id || '';
-  const storeName = seller.storeName || 'Creator Store';
-  const ownerName = seller.ownerName || 'Partner';
-  const email = seller.email || '';
-  const telegram = seller.telegram || '';
-  const category = seller.category || 'General';
-  const portfolioLink = seller.portfolioLink || '';
-  const joinedDate = formatDateTime(seller.createdAt);
-  
-  const tgClean = String(telegram).replace('@', '').trim();
-  const tgUrl = tgClean.startsWith('http') ? tgClean : (tgClean ? `https://t.me/${tgClean}` : '');
 
-  // Filter products by this seller
-  const sellerProducts = Object.values(allProducts || {}).filter(p => {
-    if (!p) return false;
-    return p.sellerId === sellerId || (p.sellerName && p.sellerName.toLowerCase() === storeName.toLowerCase());
-  });
-
-  return `
-    <div class="seller-details-modal" style="max-width: 840px; width: 100%; max-height: 90vh; display: flex; flex-direction: column;">
-      
-      <!-- Modal Header -->
-      <div class="panel-head" style="padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <h2 class="section-title" style="margin: 0; font-size: 22px; font-weight: 800; color: #fff;">${escapeHtml(storeName)}</h2>
-            <span class="badge success" style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-size: 11px;">✓ Verified Partner</span>
-            <span class="badge" style="background: rgba(255, 42, 141, 0.15); color: #ff65a3; font-size: 11px;">${escapeHtml(category)}</span>
-          </div>
-          <p class="section-subtitle" style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">
-            Seller ID: <code style="color: #93c5fd;">${escapeHtml(sellerId)}</code> &bull; Joined: ${joinedDate}
-          </p>
-        </div>
-        <button class="btn btn-ghost" data-close-modal type="button" aria-label="Close modal"><i data-lucide="x"></i></button>
-      </div>
-
-      <!-- Modal Body (Scrollable) -->
-      <div style="padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 24px;">
-        
-        <!-- Seller Info Cards Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Owner Name</div>
-            <div style="font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px;">${escapeHtml(ownerName)}</div>
-          </div>
-
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Login Email</div>
-            <div style="font-size: 14px; font-weight: 600; color: #93c5fd; margin-top: 4px; word-break: break-all;">${escapeHtml(email)}</div>
-          </div>
-
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Telegram & WhatsApp</div>
-            <div style="font-size: 14px; font-weight: 600; margin-top: 4px;">
-              ${tgUrl ? `<a href="${tgUrl}" target="_blank" style="color: #60a5fa; text-decoration: none;">${escapeHtml(telegram)} ↗</a>` : `<span style="color: var(--muted);">${escapeHtml(telegram || 'Not provided')}</span>`}
-            </div>
-          </div>
-
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Creator Revenue Share</div>
-            <div style="font-size: 14px; font-weight: 700; color: #34d399; margin-top: 4px;">100% Payout (0% Platform Fee)</div>
-          </div>
-        </div>
-
-        ${portfolioLink ? `
-          <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 16px; font-size: 13px;">
-            <span style="color: var(--muted); font-weight: 600;">Portfolio / Channel Samples:</span>
-            <a href="${escapeHtml(portfolioLink)}" target="_blank" style="color: #34d399; text-decoration: none; margin-left: 8px; font-weight: 600;">${escapeHtml(portfolioLink)} ↗</a>
-          </div>
-        ` : ''}
-
-        <!-- Products Section -->
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-            <div>
-              <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #fff;">
-                Published Packs & Collections
-                <span style="font-size: 12px; background: rgba(99, 102, 241, 0.2); color: #a5b4fc; padding: 2px 8px; border-radius: 99px; margin-left: 6px;">${sellerProducts.length}</span>
-              </h3>
-              <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">Digital packs and mega vaults listed by this partner</p>
-            </div>
-            <button class="btn btn-primary btn-sm" type="button" data-action="add-pack-for-seller" data-seller-id="${sellerId}" data-seller-name="${escapeHtml(storeName)}">
-              <i data-lucide="plus"></i> Add Pack for Seller
-            </button>
-          </div>
-
-          ${sellerProducts.length === 0 ? `
-            <div style="text-align: center; padding: 40px 20px; background: rgba(255,255,255,0.01); border: 1px dashed var(--border); border-radius: 14px;">
-              <div style="font-size: 32px; margin-bottom: 8px;">📦</div>
-              <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 15px;">No Products Published Yet</h4>
-              <p style="margin: 0 0 16px 0; color: var(--muted); font-size: 13px;">This seller has not listed any packs yet. You can publish packs on their behalf or they can upload directly from their Seller Hub.</p>
-              <button class="btn btn-primary btn-sm" type="button" data-action="add-pack-for-seller" data-seller-id="${sellerId}" data-seller-name="${escapeHtml(storeName)}">
-                <i data-lucide="plus"></i> Publish First Pack for Seller
-              </button>
-            </div>
-          ` : `
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;">
-              ${sellerProducts.map(p => {
-                const img = p.image || p.thumbnail || '/favicon.svg';
-                const pPrice = p.priceINR || p.price || '0';
-                return `
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;">
-                    <div style="height: 120px; position: relative; background: #111;">
-                      <img src="${escapeHtml(img)}" alt="${escapeHtml(p.title || p.name || 'Pack')}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/favicon.svg'" />
-                      <span class="badge" style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); font-size: 10px;">${escapeHtml(p.category || 'Pack')}</span>
-                    </div>
-                    <div style="padding: 12px 14px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
-                      <div>
-                        <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: #fff; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${escapeHtml(p.title || p.name || 'Untitled')}</h4>
-                        <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px;">
-                          <span style="font-size: 16px; font-weight: 800; color: var(--primary);">₹${escapeHtml(pPrice)}</span>
-                          ${p.originalPriceINR || p.originalPrice ? `<span style="font-size: 12px; color: var(--muted); text-decoration: line-through;">₹${escapeHtml(p.originalPriceINR || p.originalPrice)}</span>` : ''}
-                        </div>
-                      </div>
-                      <div style="display: flex; gap: 6px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; margin-top: 8px;">
-                        <button class="btn btn-ghost btn-sm" type="button" data-action="edit" data-node="products" data-id="${p.id}" style="flex: 1; font-size: 12px; padding: 4px 8px;">
-                          <i data-lucide="pencil"></i> Edit
-                        </button>
-                        <a href="/#product-${p.id}" target="_blank" class="btn btn-ghost btn-sm" style="font-size: 12px; padding: 4px 8px;" title="View in live storefront">
-                          <i data-lucide="external-link"></i>
-                        </a>
-                        <button class="btn btn-ghost danger btn-sm" type="button" data-action="delete" data-node="products" data-id="${p.id}" style="font-size: 12px; padding: 4px 8px;" title="Delete pack">
-                          <i data-lucide="trash-2"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          `}
-        </div>
-
-      </div>
-
-      <!-- Modal Footer -->
-      <div style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.2);">
-        <div>
-          <button class="btn btn-ghost danger btn-sm" type="button" data-action="delete-seller" data-seller-id="${sellerId}" data-store="${escapeHtml(storeName)}">
-            <i data-lucide="trash-2"></i> Delete Seller Account
-          </button>
-        </div>
-        <div style="display: flex; gap: 10px;">
-          ${tgUrl ? `
-            <a href="${tgUrl}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration: none;">
-              <i data-lucide="send"></i> Message on Telegram
-            </a>
-          ` : ''}
-          <button class="btn btn-primary btn-sm" type="button" data-action="add-pack-for-seller" data-seller-id="${sellerId}" data-seller-name="${escapeHtml(storeName)}">
-            <i data-lucide="plus"></i> Add Pack
-          </button>
-          <button class="btn btn-ghost btn-sm" data-close-modal type="button">Close</button>
-        </div>
-      </div>
-
-    </div>
-  `;
-}
-
-function renderSellersManagementView(data = {}, fullData = {}) {
-  const rawApps = {
-    ...(data.events?.seller_applications || fullData.events?.seller_applications || {}),
-    ...(data.seller_applications || fullData.seller_applications || {}),
-  };
-  const rawSellers = {
-    ...(data.events?.sellers || fullData.events?.sellers || {}),
-    ...(data.sellers || fullData.sellers || {}),
-  };
-  const products = data.products || fullData.products || {};
-
-  const applicationsList = Object.entries(rawApps).map(([id, app]) => ({
-    id: app?.id || id,
-    ...app,
-  })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-  const sellersList = Object.entries(rawSellers).map(([id, s]) => {
-    const sId = s?.id || id;
-    const sStore = (s?.storeName || '').toLowerCase();
-    const sellerProds = Object.values(products).filter(p => {
-      if (!p) return false;
-      return p.sellerId === sId || (sStore && p.sellerName && p.sellerName.toLowerCase() === sStore);
-    });
-    return {
-      id: sId,
-      ...s,
-      productCount: sellerProds.length,
-    };
-  }).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-  const pendingApps = applicationsList.filter(a => (a.status || 'pending') === 'pending');
-  const activeTab = ui.sellers?.tab || 'pending';
-
-  return `
-    <div class="page active management-page-shell" style="max-width: 1240px; margin: 0 auto; padding-bottom: 60px;">
-      
-      <!-- Top Header -->
-      <section class="panel glass" style="padding: 24px 28px; border-radius: 16px; margin-bottom: 24px; border: 1px solid var(--border);">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-          <div>
-            <div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">Partner & Multi-Vendor Hub</div>
-            <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text);">Seller Management & Approvals</h2>
-            <p style="margin: 4px 0 0 0; color: var(--muted); font-size: 13px;">Review partner applications, generate seller credentials via Brevo email, and monitor verified stores.</p>
-          </div>
-          <div class="toolbar" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-ghost" type="button" data-action="refresh-sellers" title="Refresh seller data"><i data-lucide="refresh-cw"></i> Refresh</button>
-            <a href="/seller/apply" target="_blank" class="btn btn-ghost" title="Open Application Page"><i data-lucide="external-link"></i> Application Page</a>
-          </div>
-        </div>
-
-        <!-- Metric KPI Cards -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
-          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 14px; padding: 16px 18px;">
-            <div style="font-size: 11px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em;">Pending Review</div>
-            <div style="font-size: 26px; font-weight: 800; color: #fde68a; margin-top: 4px;">${pendingApps.length}</div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Awaiting admin approval</div>
-          </div>
-
-          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 14px; padding: 16px 18px;">
-            <div style="font-size: 11px; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em;">Active Sellers</div>
-            <div style="font-size: 26px; font-weight: 800; color: #6ee7b7; margin-top: 4px;">${sellersList.length}</div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Verified creator accounts</div>
-          </div>
-
-          <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 14px; padding: 16px 18px;">
-            <div style="font-size: 11px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em;">Total Applications</div>
-            <div style="font-size: 26px; font-weight: 800; color: #c7d2fe; margin-top: 4px;">${applicationsList.length}</div>
-            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Lifetime applicant requests</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Tab Navigation -->
-      <div class="order-tabs-nav" style="margin-bottom: 18px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <button type="button" class="order-tab-btn ${activeTab === 'pending' ? 'active' : ''}" data-action="set-sellers-tab" data-tab="pending">
-          Pending Applications <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 7px; border-radius: 99px; font-size: 11px;">${pendingApps.length}</span>
-        </button>
-        <button type="button" class="order-tab-btn ${activeTab === 'active' ? 'active' : ''}" data-action="set-sellers-tab" data-tab="active">
-          Verified Active Sellers <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 7px; border-radius: 99px; font-size: 11px;">${sellersList.length}</span>
-        </button>
-        <button type="button" class="order-tab-btn ${activeTab === 'all' ? 'active' : ''}" data-action="set-sellers-tab" data-tab="all">
-          All History <span>${applicationsList.length}</span>
-        </button>
-      </div>
-
-      <!-- TAB CONTENT: PENDING -->
-      ${activeTab === 'pending' ? `
-        <div class="panel glass" style="border-radius: 16px; border: 1px solid var(--border); overflow: hidden;">
-          ${pendingApps.length === 0 ? `
-            <div style="text-align: center; padding: 60px 20px;">
-              <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
-              <h3 style="margin: 0 0 6px 0; color: var(--text);">No Pending Applications</h3>
-              <p style="margin: 0; color: var(--muted); font-size: 14px;">All creator store applications have been reviewed and approved.</p>
-            </div>
-          ` : `
-            <div style="display: grid; gap: 16px; padding: 20px;">
-              ${pendingApps.map(app => {
-                const tgClean = String(app.telegram || '').replace('@', '').trim();
-                const tgUrl = tgClean.startsWith('http') ? tgClean : `https://t.me/${tgClean}`;
-                return `
-                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
-                      <div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                          <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #fff;">${escapeHtml(app.storeName || 'Creator Store')}</h3>
-                          <span class="badge" style="background: rgba(255, 42, 141, 0.15); color: #ff65a3; border: 1px solid rgba(255, 42, 141, 0.3); font-size: 11px;">${escapeHtml(app.category || 'General')}</span>
-                        </div>
-                        <div style="margin-top: 6px; font-size: 13px; color: var(--muted);">
-                          Applicant: <strong style="color: #fff;">${escapeHtml(app.applicantName || 'Partner')}</strong> &bull; 
-                          Email: <span style="color: #93c5fd;">${escapeHtml(app.email || '')}</span> &bull; 
-                          Applied: <span>${formatDateTime(app.createdAt)}</span>
-                        </div>
-                      </div>
-
-                      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                        ${(app.status === 'approved' || app.credentialsSent) ? `
-                          <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
-                            <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Credentials Sent (Approved)
-                          </span>
-                          <button class="btn btn-ghost" type="button" data-action="view-seller-profile" data-seller-id="${app.sellerId || ''}">
-                            <i data-lucide="eye"></i> View Profile & Packs
-                          </button>
-                        ` : `
-                          <button class="btn btn-primary" type="button" data-action="approve-seller" data-id="${app.id}" data-store="${escapeHtml(app.storeName)}" data-email="${escapeHtml(app.email)}">
-                            <i data-lucide="check"></i> Approve & Send Mail
-                          </button>
-                          <button class="btn btn-ghost danger" type="button" data-action="reject-seller" data-id="${app.id}">
-                            <i data-lucide="x"></i> Reject
-                          </button>
-                        `}
-                        <button class="btn btn-ghost danger" type="button" data-action="delete-seller-app" data-id="${app.id}" data-store="${escapeHtml(app.storeName)}" title="Permanently delete application">
-                          <i data-lucide="trash-2"></i> Delete
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Details Row -->
-                    <div style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px 14px; font-size: 13px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
-                      <div>
-                        <span style="color: var(--muted);">Telegram/Contact:</span>
-                        <a href="${tgUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; margin-left: 6px; font-weight: 600;">
-                          ${escapeHtml(app.telegram || 'None')} ↗
-                        </a>
-                      </div>
-                      ${app.portfolioLink ? `
-                        <div>
-                          <span style="color: var(--muted);">Portfolio / Samples:</span>
-                          <a href="${escapeHtml(app.portfolioLink)}" target="_blank" style="color: #34d399; text-decoration: none; margin-left: 6px; font-weight: 600;">
-                            View Samples ↗
-                          </a>
-                        </div>
-                      ` : ''}
-                      ${app.reason ? `
-                        <div style="grid-column: 1 / -1; color: #cbd5e1; margin-top: 4px;">
-                          <span style="color: var(--muted);">Statement:</span> "${escapeHtml(app.reason)}"
-                        </div>
-                      ` : ''}
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          `}
-        </div>
-      ` : ''}
-
-      <!-- TAB CONTENT: ACTIVE SELLERS -->
-      ${activeTab === 'active' ? `
-        <div class="panel glass" style="border-radius: 16px; border: 1px solid var(--border); overflow: hidden;">
-          ${sellersList.length === 0 ? `
-            <div style="text-align: center; padding: 60px 20px;">
-              <div style="font-size: 40px; margin-bottom: 12px;">🏪</div>
-              <h3 style="margin: 0 0 6px 0; color: var(--text);">No Active Sellers Yet</h3>
-              <p style="margin: 0; color: var(--muted); font-size: 14px;">Once you approve applications, verified sellers will appear here.</p>
-            </div>
-          ` : `
-            <div class="table-container" style="overflow-x: auto;">
-              <table class="data-table" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left; font-size: 12px; color: var(--muted);">
-                    <th style="padding: 14px 18px;">Store & Owner</th>
-                    <th style="padding: 14px 18px;">Email & Contact</th>
-                    <th style="padding: 14px 18px;">Category</th>
-                    <th style="padding: 14px 18px;">Packs</th>
-                    <th style="padding: 14px 18px;">Status</th>
-                    <th style="padding: 14px 18px;">Joined</th>
-                    <th style="padding: 14px 18px; text-align: right;">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${sellersList.map(s => `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px;">
-                      <td style="padding: 14px 18px; cursor: pointer;" data-action="view-seller-profile" data-seller-id="${s.id}">
-                        <strong style="color: #fff; font-size: 14px; text-decoration: underline; text-underline-offset: 3px;">${escapeHtml(s.storeName || 'Store')}</strong>
-                        <div style="font-size: 12px; color: var(--muted);">${escapeHtml(s.ownerName || '')}</div>
-                      </td>
-                      <td style="padding: 14px 18px;">
-                        <div style="color: #93c5fd; font-family: monospace;">${escapeHtml(s.email || '')}</div>
-                        <div style="font-size: 12px; color: var(--muted);">${escapeHtml(s.telegram || '')}</div>
-                      </td>
-                      <td style="padding: 14px 18px;">
-                        <span class="badge" style="background: rgba(255,255,255,0.06); font-size: 11px;">${escapeHtml(s.category || 'General')}</span>
-                      </td>
-                      <td style="padding: 14px 18px;">
-                        <span style="font-weight: 700; color: #fff;">${s.productCount}</span> packs
-                      </td>
-                      <td style="padding: 14px 18px;">
-                        <span class="badge success" style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-size: 11px;">Active</span>
-                      </td>
-                      <td style="padding: 14px 18px; color: var(--muted);">
-                        ${formatDateTime(s.createdAt)}
-                      </td>
-                      <td style="padding: 14px 18px; text-align: right; white-space: nowrap;">
-                        <div style="display: inline-flex; gap: 8px; align-items: center;">
-                          <button class="btn btn-primary btn-sm" type="button" data-action="view-seller-profile" data-seller-id="${s.id}" title="View seller profile and all published packs">
-                            <i data-lucide="eye"></i> View Profile & Packs
-                          </button>
-                          <button class="btn btn-ghost danger btn-sm" type="button" data-action="delete-seller" data-seller-id="${s.id}" data-store="${escapeHtml(s.storeName)}" title="Delete seller account">
-                            <i data-lucide="trash-2"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          `}
-        </div>
-      ` : ''}
-
-      <!-- TAB CONTENT: ALL HISTORY -->
-      ${activeTab === 'all' ? `
-        <div class="panel glass" style="border-radius: 16px; border: 1px solid var(--border); overflow: hidden;">
-          <div class="table-container" style="overflow-x: auto;">
-            <table class="data-table" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left; font-size: 12px; color: var(--muted);">
-                  <th style="padding: 14px 18px;">Store Name</th>
-                  <th style="padding: 14px 18px;">Applicant</th>
-                  <th style="padding: 14px 18px;">Email</th>
-                  <th style="padding: 14px 18px;">Status</th>
-                  <th style="padding: 14px 18px;">Date</th>
-                  <th style="padding: 14px 18px; text-align: right;">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${applicationsList.map(a => `
-                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px;">
-                    <td style="padding: 14px 18px; font-weight: 700; color: #fff;">${escapeHtml(a.storeName || 'Store')}</td>
-                    <td style="padding: 14px 18px;">${escapeHtml(a.applicantName || '')}</td>
-                    <td style="padding: 14px 18px; font-family: monospace; color: #93c5fd;">${escapeHtml(a.email || '')}</td>
-                    <td style="padding: 14px 18px;">
-                      ${a.status === 'approved' ? '<span class="badge success">Approved</span>' : a.status === 'rejected' ? '<span class="badge danger">Rejected</span>' : '<span class="badge warning">Pending</span>'}
-                    </td>
-                    <td style="padding: 14px 18px; color: var(--muted);">${formatDateTime(a.createdAt)}</td>
-                    <td style="padding: 14px 18px; text-align: right;">
-                      <button class="icon-btn danger" type="button" data-action="delete-seller-app" data-id="${a.id}" data-store="${escapeHtml(a.storeName)}" title="Permanently delete application record">
-                        <i data-lucide="trash-2"></i> Delete
-                      </button>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ` : ''}
-
-    </div>
-  `;
-}
 
 function renderReviewsManagementView(reviewsData = {}, fullData = {}) {
   const productsMap = fullData.products || {};
@@ -8702,7 +7961,16 @@ window.handleAdminModalVideoError = function(video, posterUrl) {
   if (window.lucide) lucide.createIcons();
 };
 
+let _unifiedMediaCache = null;
+
+function invalidateUnifiedMediaCache() {
+  _unifiedMediaCache = null;
+}
+
 function getAllUnifiedMediaItems(data = {}) {
+  if (_unifiedMediaCache && !data.__forceRefresh) {
+    return _unifiedMediaCache;
+  }
   const mediaMap = new Map();
 
   // 1. Scan explicit records from 'media' node in Firebase
@@ -8838,7 +8106,8 @@ function getAllUnifiedMediaItems(data = {}) {
     recordAssetUsage(t.image, `Testimonial: ${t.name || 'User'}`, 'testimonials');
   }
 
-  return Array.from(mediaMap.values());
+  _unifiedMediaCache = Array.from(mediaMap.values());
+  return _unifiedMediaCache;
 }
 
 function filterMediaItems(items = []) {
@@ -9124,13 +8393,17 @@ function renderMediaCard(item = {}) {
         ${isVideo ? `
           <div class="media-video-indicator"><i data-lucide="video" style="width:11px;height:11px;"></i> VID</div>
           <div class="media-play-pill"><i data-lucide="play"></i></div>
-          <video class="thumb-media" src="${escapeHtml(src)}" ${posterSrc ? `poster="${escapeHtml(posterSrc)}"` : ''} preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;" onerror="window.handleAdminVideoError(this);"></video>
+          ${posterSrc ? `
+            <img class="thumb-media" src="${escapeHtml(posterSrc)}" alt="${escapeHtml(item.name || 'Video Poster')}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;" onerror="window.handleAdminThumbImgError(this, '${escapeHtml(fileName)}');" />
+          ` : `
+            <video class="thumb-media" src="${escapeHtml(src)}" preload="none" muted playsinline style="width:100%;height:100%;object-fit:cover;" onerror="window.handleAdminVideoError(this);"></video>
+          `}
           <div class="video-fallback-thumb" style="display:none; width:100%; height:100%; align-items:center; justify-content:center; background: radial-gradient(circle at center, #1e1b4b, #0b0f19); color:#818cf8; flex-direction:column; gap:6px;">
             <i data-lucide="film" style="width:32px;height:32px;opacity:0.8;"></i>
             <span style="font-size:10.5px;font-weight:700;letter-spacing:0.04em;background:rgba(99,102,241,0.25);padding:2px 8px;border-radius:6px;border:1px solid rgba(99,102,241,0.35);">VIDEO ASSET</span>
           </div>
         ` : `
-          <img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.name || 'Media')}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="window.handleAdminThumbImgError(this, '${escapeHtml(fileName)}');" />
+          <img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.name || 'Media')}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;" onerror="window.handleAdminThumbImgError(this, '${escapeHtml(fileName)}');" />
         `}
       </button>
 
@@ -9307,11 +8580,20 @@ function renderMediaView(data) {
   const currentLifecycle = ui.media.lifecycle || 'active';
   const isTrashTab = currentLifecycle === 'deleted';
 
+  const countsByBucket = {};
+  for (let i = 0; i < rawItems.length; i++) {
+    const item = rawItems[i];
+    const matchStatus = isTrashTab ? item.status === 'deleted' : item.status !== 'deleted';
+    if (matchStatus) {
+      const bKey = mediaBucketKey(item);
+      countsByBucket[bKey] = (countsByBucket[bKey] || 0) + 1;
+    }
+  }
   const folderCounts = MEDIA_FOLDER_FILTERS
     .filter((option) => option.value !== 'all')
     .map((option) => ({
       ...option,
-      count: rawItems.filter((item) => (isTrashTab ? item.status === 'deleted' : item.status !== 'deleted') && mediaBucketKey(item) === option.value).length,
+      count: countsByBucket[option.value] || 0,
     }));
 
   const selectedCount = ui.media.selectedIds ? ui.media.selectedIds.size : 0;
@@ -9604,7 +8886,7 @@ function renderAnalyticsView(data) {
 function renderView(data) {
   try {
     ui.data = data;
-    sideNav.innerHTML = navMarkup();
+    updateSideNavActive(ui.route);
     const current = ui.route;
 
     // Preserve active input/textarea focus & cursor if user is actively typing
@@ -9636,15 +8918,13 @@ function renderView(data) {
     else if (current === 'orders') html = renderOrdersManagementView(data.orders || {}, data || {});
     else if (current === 'reviews') html = renderReviewsManagementView(data.reviews || {}, data || {});
     else if (current === 'screenshots') html = renderScreenshotsGalleryView(data.orders || {}, data || {});
-    else if (current === 'users') html = renderUsersManagementView(data || {});
-    else if (current === 'sellers') html = renderSellersManagementView(data || {}, data || {});
     else if (current === 'analytics') html = renderAnalyticsView(data);
     else if (current === 'hero') html = renderSingleEditorPage('hero', singleEditors.hero, data.hero || {});
     else if (current === 'banner') html = renderSingleEditorPage('banner', singleEditors.banner, data.banner || {});
     else html = renderDashboard(data);
     viewRoot.innerHTML = html;
-    if (window.lucide) lucide.createIcons();
-    initCatalogDragAndDrop();
+    if (window.lucide && viewRoot) lucide.createIcons({ root: viewRoot });
+    if (current === 'catalog' || current === 'products' || current === 'categories') initCatalogDragAndDrop();
     if (current === 'analytics') mountAnalyticsCharts();
     if (notifyCount) {
       notifyCount.textContent = String(recentActivity(12).length);
@@ -10122,359 +9402,6 @@ function attachGlobalHandlers() {
       } catch (err) {
         showToast('Failed to refresh sessions', 'danger');
       }
-      return;
-    }
-    if (action === 'refresh-users') {
-      showToast('Refreshing users directory...', 'info');
-      try {
-        await fetchUsersForAdmin(true);
-        renderView(ui.data || {});
-        showToast('Users directory updated!', 'success');
-      } catch (err) {
-        showToast('Failed to refresh users', 'danger');
-      }
-      return;
-    }
-    if (action === 'export-users-csv') {
-      exportUsersCsv();
-      return;
-    }
-    if (action === 'set-users-filter') {
-      ui.usersProvider = actionBtn.dataset.filter || 'all';
-      renderView(ui.data || {});
-      return;
-    }
-    if (action === 'set-sellers-tab') {
-      if (!ui.sellers) ui.sellers = { tab: 'pending', search: '' };
-      ui.sellers.tab = actionBtn.dataset.tab || 'pending';
-      renderView(ui.data || {});
-      return;
-    }
-    if (action === 'approve-seller') {
-      const appId = actionBtn.dataset.id;
-      const storeName = actionBtn.dataset.store || 'store';
-      const sellerEmail = actionBtn.dataset.email || '';
-
-      const currentApp = (ui.data?.seller_applications && ui.data.seller_applications[appId]) ||
-                         (ui.data?.events?.seller_applications && ui.data.events.seller_applications[appId]) || {};
-      if (currentApp.status === 'approved' || currentApp.credentialsSent) {
-        showToast(`"${storeName}" has already been approved! Credentials were sent once upon approval.`, 'info');
-        return;
-      }
-
-      if (!confirm(`Approve "${storeName}" (${sellerEmail}) as an official LinkAdda Seller?\n\nA secure temporary password will be generated and emailed to ${sellerEmail} via Brevo SMTP.`)) {
-        return;
-      }
-      actionBtn.disabled = true;
-      actionBtn.innerHTML = '<i data-lucide="loader-2"></i> Approving...';
-
-      let apiApproved = false;
-      let tempPassword = `LA-Seller@${Math.floor(1000 + Math.random() * 9000)}`;
-      let sellerId = `seller_${Math.random().toString(36).substring(2, 10)}`;
-
-      // 1. Try serverless backend endpoint with safe text parsing
-      try {
-        const adminHeaders = await getAdminTokenHeader();
-        const res = await fetch('/api/seller/approve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...adminHeaders },
-          body: JSON.stringify({ applicationId: appId, action: 'approve' }),
-        });
-        const rawText = await res.text();
-        let resData = null;
-        try { resData = rawText ? JSON.parse(rawText) : null; } catch(_) {}
-        if (res.ok && resData && resData.success) {
-          apiApproved = true;
-          if (resData.temporaryPassword) tempPassword = resData.temporaryPassword;
-          if (resData.sellerId) sellerId = resData.sellerId;
-        }
-      } catch (err) {
-        console.warn('API approve notice, proceeding to direct client fallback:', err);
-      }
-
-      // 2. Direct client-side approval via authenticated Firebase SDK (fail-proof)
-      if (!apiApproved) {
-        try {
-          let appRecord = (ui.data?.seller_applications && ui.data.seller_applications[appId]) ||
-                          (ui.data?.events?.seller_applications && ui.data.events.seller_applications[appId]) || {};
-
-          if (!appRecord || !appRecord.email) {
-            try {
-              const s = await get(ref(db, 'events/seller_applications/' + appId));
-              if (s.exists()) appRecord = s.val();
-            } catch (_) {}
-          }
-
-          const secret = 'cc3843b7abd7d382223640a8556e175a60781c794637c85ca28ec035036b644b';
-          const enc = new TextEncoder();
-          const hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(tempPassword + secret));
-          const passwordHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-          const sellerRecord = {
-            id: sellerId,
-            email: String(appRecord.email || sellerEmail).toLowerCase().trim(),
-            ownerName: appRecord.applicantName || 'Partner',
-            storeName: appRecord.storeName || storeName,
-            telegram: appRecord.telegram || '',
-            category: appRecord.category || 'General',
-            portfolioLink: appRecord.portfolioLink || '',
-            passwordHash,
-            status: 'active',
-            mustChangePassword: true,
-            createdAt: Date.now(),
-            totalProducts: 0,
-            totalOrders: 0,
-            totalRevenue: 0,
-          };
-
-          // Save seller to events/sellers and root sellers
-          await set(ref(db, 'events/sellers/' + sellerId), sellerRecord);
-          try { await set(ref(db, 'sellers/' + sellerId), sellerRecord); } catch (_) {}
-
-          // Update application status
-          const updateApp = { status: 'approved', sellerId, reviewedAt: Date.now() };
-          await update(ref(db, 'events/seller_applications/' + appId), updateApp);
-          try { await update(ref(db, 'seller_applications/' + appId), updateApp); } catch (_) {}
-
-          // Secure backend email dispatch
-          sendAdminNotificationEmail({
-            to: [{ email: sellerEmail, name: storeName }],
-            subject: `🎉 Congratulations! Your LinkAdda Seller Account is Approved (${storeName})`,
-            htmlContent: `
-              <div style="font-family: sans-serif; background: #07060c; color: #fff; padding: 30px; border-radius: 16px; max-width: 500px; margin: 0 auto;">
-                <h1 style="color: #ff2a8d; margin-top: 0;">Welcome to LinkAdda, ${escapeHtml(storeName)}!</h1>
-                <p style="color: #cbd5e1; line-height: 1.5;">Your digital content partner application has been approved by LinkAdda Admin. You can now log into your Seller Hub, list exclusive packs, and track your 100% payouts.</p>
-                <div style="background: #181426; padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid rgba(255,42,141,0.3);">
-                  <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 13px;">Login Portal: <a href="https://linkadda.online/seller/login" style="color: #ff2a8d; font-weight: 700;">linkadda.online/seller/login</a></p>
-                  <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 13px;">Email: <strong style="color: #fff;">${escapeHtml(sellerEmail)}</strong></p>
-                  <p style="margin: 0; color: #94a3b8; font-size: 13px;">Temporary Password: <code style="color: #fbbf24; font-size: 16px; font-weight: 800;">${escapeHtml(tempPassword)}</code></p>
-                </div>
-                <p style="color: #64748b; font-size: 11px;">Security notice: You will be asked to choose your own permanent password on your first sign-in.</p>
-              </div>
-            `
-          }).catch(e => console.warn('Email dispatch note:', e));
-
-          apiApproved = true;
-        } catch (fbErr) {
-          console.error('Direct cloud approval error:', fbErr);
-          showToast('Approval error: ' + fbErr.message, 'danger');
-          actionBtn.disabled = false;
-          actionBtn.innerHTML = '<i data-lucide="check"></i> Approve & Send Mail';
-          return;
-        }
-      }
-
-      showToast(`Seller "${storeName}" approved! Credentials dispatched.`, 'success');
-
-      // Refresh RTDB store state
-      try {
-        let baseApps = {}, evtApps = {}, sellersData = {};
-        try { const s = await get(ref(db, 'events/seller_applications')); if (s.exists()) evtApps = s.val(); } catch(_) {}
-        try { const s = await get(ref(db, 'seller_applications')); if (s.exists()) baseApps = s.val(); } catch(_) {}
-        try { const s = await get(ref(db, 'events/sellers')); if (s.exists()) sellersData = { ...sellersData, ...s.val() }; } catch(_) {}
-        try { const s = await get(ref(db, 'sellers')); if (s.exists()) sellersData = { ...sellersData, ...s.val() }; } catch(_) {}
-        if (ui.data) {
-          ui.data.seller_applications = { ...evtApps, ...baseApps };
-          ui.data.sellers = sellersData;
-        }
-        if (!ui.sellers) ui.sellers = { tab: 'active', search: '' };
-        else ui.sellers.tab = 'active';
-      } catch (_) {}
-
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const portalUrl = isLocalhost ? `${window.location.origin}/seller/login` : 'https://linkadda.online/seller/login';
-      const portalLabel = isLocalhost ? `${window.location.host}/seller/login` : 'linkadda.online/seller/login';
-
-      // Open Success Credentials Modal with direct 1-click copy & profile view
-      openModal(`
-        <div style="max-width: 480px; width: 100%; padding: 24px; text-align: left;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 26px;">🎉</span>
-              <div>
-                <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #fff;">Seller Approved!</h3>
-                <span style="font-size: 12px; color: #34d399; font-weight: 600;">✓ Account Active & Ready</span>
-              </div>
-            </div>
-            <button class="btn btn-ghost" data-close-modal type="button"><i data-lucide="x"></i></button>
-          </div>
-
-          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 13px; color: #d1fae5;">
-            <strong>${escapeHtml(storeName)}</strong> has been approved as an official partner. An onboarding email was dispatched to <strong>${escapeHtml(sellerEmail)}</strong>.
-          </div>
-
-          <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin-bottom: 20px; font-size: 13px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 10px;">Seller Login Credentials</div>
-            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: var(--muted);">Email:</span>
-              <code style="color: #93c5fd; font-size: 13px;">${escapeHtml(sellerEmail)}</code>
-            </div>
-            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: var(--muted);">Temp Password:</span>
-              <code style="color: #fbbf24; font-weight: 800; background: rgba(245, 158, 11, 0.15); padding: 3px 8px; border-radius: 4px; font-size: 14px;">${escapeHtml(tempPassword)}</code>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: var(--muted);">Partner Portal:</span>
-              <a href="${portalUrl}" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">${portalLabel} ↗</a>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-            <button class="btn btn-ghost" type="button" data-action="copy-credentials" data-text="LinkAdda Seller Login\nPortal: ${portalUrl}\nEmail: ${escapeHtml(sellerEmail)}\nPassword: ${escapeHtml(tempPassword)}">
-              <i data-lucide="copy"></i> Copy Credentials
-            </button>
-            <button class="btn btn-primary" type="button" data-action="view-seller-profile" data-seller-id="${sellerId}">
-              <i data-lucide="eye"></i> View Profile & Packs
-            </button>
-          </div>
-        </div>
-      `);
-
-      renderView(ui.data || {});
-      return;
-    }
-    if (action === 'delete-seller-app') {
-      const appId = actionBtn.dataset.id;
-      const storeName = actionBtn.dataset.store || 'Application';
-      if (!confirm(`Permanently delete seller application for "${storeName}"?\n\nThis record will be permanently deleted from database.`)) {
-        return;
-      }
-      actionBtn.disabled = true;
-      try {
-        await remove(ref(db, 'events/seller_applications/' + appId));
-        try { await remove(ref(db, 'seller_applications/' + appId)); } catch(_) {}
-        if (ui.data?.seller_applications) delete ui.data.seller_applications[appId];
-        if (ui.data?.events?.seller_applications) delete ui.data.events.seller_applications[appId];
-        showToast(`Application for "${storeName}" deleted permanently.`, 'warning');
-      } catch (err) {
-        showToast('Delete failed: ' + err.message, 'danger');
-      } finally {
-        renderView(ui.data || {});
-      }
-      return;
-    }
-    if (action === 'delete-seller') {
-      const sellerId = actionBtn.dataset.sellerId;
-      const storeName = actionBtn.dataset.store || 'Seller';
-      if (!confirm(`Permanently delete verified seller "${storeName}"?\n\nTheir partner account will be revoked.`)) {
-        return;
-      }
-      actionBtn.disabled = true;
-      try {
-        await remove(ref(db, 'events/sellers/' + sellerId));
-        try { await remove(ref(db, 'sellers/' + sellerId)); } catch(_) {}
-        if (ui.data?.sellers) delete ui.data.sellers[sellerId];
-        if (ui.data?.events?.sellers) delete ui.data.events.sellers[sellerId];
-        closeModal();
-        showToast(`Seller "${storeName}" deleted permanently.`, 'warning');
-      } catch (err) {
-        showToast('Delete failed: ' + err.message, 'danger');
-      } finally {
-        renderView(ui.data || {});
-      }
-      return;
-    }
-    if (action === 'view-seller-profile') {
-      const sellerId = actionBtn.dataset.sellerId;
-      const allSellers = { ...(ui.data?.events?.sellers || {}), ...(ui.data?.sellers || {}) };
-      const seller = allSellers[sellerId] || { id: sellerId, storeName: 'Creator Store' };
-      const allProducts = ui.data?.products || {};
-      const allOrders = ui.data?.orders || {};
-      openModal(renderSellerDetailsModal(seller, allProducts, allOrders));
-      return;
-    }
-    if (action === 'add-pack-for-seller') {
-      closeModal();
-      const sellerId = actionBtn.dataset.sellerId || '';
-      const sellerName = actionBtn.dataset.sellerName || '';
-      ui.route = 'catalog';
-      ui.catalogTab = 'products';
-      window.location.hash = '#/catalog';
-      renderView(ui.data || {});
-      setTimeout(() => {
-        openRecordEditor('products', collectionSchemas.products, {
-          sellerId,
-          sellerName,
-          category: 'ALL IN ONE',
-          badge: 'Creator Vault',
-        });
-      }, 100);
-      return;
-    }
-    if (action === 'copy-credentials') {
-      const text = actionBtn.dataset.text || '';
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-          showToast('Credentials copied to clipboard!', 'success');
-        }).catch(() => {
-          prompt('Copy credentials:', text);
-        });
-      } else {
-        prompt('Copy credentials:', text);
-      }
-      return;
-    }
-    if (action === 'reject-seller') {
-      const appId = actionBtn.dataset.id;
-      const reason = prompt('Rejection reason (optional):', 'Application does not meet store criteria.');
-      if (reason === null) return;
-      actionBtn.disabled = true;
-      try {
-        let apiDone = false;
-        try {
-          const adminHeaders = await getAdminTokenHeader();
-          const res = await fetch('/api/seller/approve', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...adminHeaders },
-            body: JSON.stringify({ applicationId: appId, action: 'reject', reason }),
-          });
-          const rawText = await res.text();
-          let resData = null;
-          try { resData = rawText ? JSON.parse(rawText) : null; } catch(_) {}
-          if (res.ok && resData && resData.success) apiDone = true;
-        } catch (_) {}
-
-        if (!apiDone) {
-          const rejectPayload = { status: 'rejected', rejectionReason: reason, reviewedAt: Date.now() };
-          await update(ref(db, 'events/seller_applications/' + appId), rejectPayload);
-          try { await update(ref(db, 'seller_applications/' + appId), rejectPayload); } catch (_) {}
-        }
-        showToast('Application rejected.', 'warning');
-        try {
-          let baseApps = {}, evtApps = {};
-          try { const s = await get(ref(db, 'events/seller_applications')); if (s.exists()) evtApps = s.val(); } catch(_) {}
-          try { const s = await get(ref(db, 'seller_applications')); if (s.exists()) baseApps = s.val(); } catch(_) {}
-          if (ui.data) ui.data.seller_applications = { ...evtApps, ...baseApps };
-        } catch (_) {}
-      } catch (err) {
-        showToast(err.message, 'danger');
-      } finally {
-        renderView(ui.data || {});
-      }
-      return;
-    }
-    if (action === 'refresh-sellers') {
-      showToast('Refreshing seller records...', 'info');
-      try {
-        let baseApps = {}, evtApps = {}, sellersData = {};
-        try { const s = await get(ref(db, 'events/seller_applications')); if (s.exists()) evtApps = s.val(); } catch(_) {}
-        try { const s = await get(ref(db, 'seller_applications')); if (s.exists()) baseApps = s.val(); } catch(_) {}
-        try { const s = await get(ref(db, 'events/sellers')); if (s.exists()) sellersData = { ...sellersData, ...s.val() }; } catch(_) {}
-        try { const s = await get(ref(db, 'sellers')); if (s.exists()) sellersData = { ...sellersData, ...s.val() }; } catch(_) {}
-        if (ui.data) {
-          ui.data.seller_applications = { ...evtApps, ...baseApps };
-          ui.data.sellers = sellersData;
-        }
-        renderView(ui.data || {});
-        showToast('Sellers data updated!', 'success');
-      } catch (err) {
-        showToast('Refresh error: ' + err.message, 'danger');
-      }
-      return;
-    }
-    if (action === 'view-seller-packs') {
-      ui.route = 'catalog';
-      window.location.hash = '#/catalog';
       return;
     }
     if (action === 'edit-single') {
@@ -11889,19 +10816,6 @@ function attachGlobalHandlers() {
       }, 140);
       return;
     }
-    if (event.target.id === 'usersSearchInput') {
-      ui.usersSearch = event.target.value;
-      clearTimeout(_generalSearchDebounceTimer);
-      _generalSearchDebounceTimer = setTimeout(() => {
-        renderView(ui.data || {});
-        const input = document.getElementById('usersSearchInput');
-        if (input) {
-          input.focus();
-          input.setSelectionRange(input.value.length, input.value.length);
-        }
-      }, 140);
-      return;
-    }
     if (event.target.id === 'pmLogoInput') {
       const val = (event.target.value || '').trim();
       const preview = document.getElementById('pmLogoPreview');
@@ -12356,6 +11270,7 @@ renderView(ui.data || {});
 // Subscribe to state updates for seamless live sync
 subscribe((data) => {
   ui.data = data;
+  invalidateUnifiedMediaCache();
   renderView(data);
   syncRealApprovedOrdersToSettings(data);
 });
