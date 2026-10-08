@@ -95,16 +95,21 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
     }
   }
 
-  function makeCardImgHtml(imgUrl, title, isEager, isSecondary) {
-    if (!imgUrl) return '<div class="fk-card-no-img"><i class="fa-solid fa-gem"></i> VIP Pack</div>';
+  function makeCardImgHtml(imgUrl, title, isEager, isSecondary, hasVideo) {
+    if (!imgUrl) {
+      if (hasVideo) {
+        return '<div class="fk-card-no-img" style="background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);"><i class="fa-solid fa-circle-play" style="color:#f43f5e;font-size:36px;margin-bottom:8px;"></i> 4K Video Preview</div>';
+      }
+      return '<div class="fk-card-no-img"><i class="fa-solid fa-gem"></i> VIP Pack</div>';
+    }
     const cleanUrl = esc(imgUrl);
     const fn = String(imgUrl || '').split('/').pop().split('?')[0];
     const localFallback = 'images/' + fn;
-    const placeholderSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3C/svg%3E";
+    const placeholderSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3C/svg%3E";
     if (isSecondary) {
-      return '<img src="' + placeholderSvg + '" data-src="' + cleanUrl + '" alt="' + esc(title) + '" loading="lazy" decoding="async" fetchpriority="low" draggable="false" class="fk-card-img fk-card-img-lazy" data-fallback="' + esc(localFallback) + '" onload="this.classList.add(\'is-loaded\'); this.closest(\'.fk-card\')?.classList.add(\'is-seen\');" onerror="window.handleCardImgError ? window.handleCardImgError(this) : null;" />';
+      return '<img src="' + placeholderSvg + '" data-src="' + cleanUrl + '" alt="' + esc(title) + '" loading="lazy" decoding="async" fetchpriority="low" draggable="false" class="fk-card-img fk-card-img-lazy" data-fallback="' + esc(localFallback) + '" onload="this.classList.add(\'is-loaded\'); var m=this.closest(\'.fk-card-media\'); if(m) m.classList.add(\'is-media-loaded\');" onerror="window.handleCardImgError ? window.handleCardImgError(this) : null;" />';
     }
-    return '<img src="' + cleanUrl + '" alt="' + esc(title) + '" loading="' + (isEager ? 'eager' : 'lazy') + '" decoding="async" fetchpriority="' + (isEager ? 'high' : 'low') + '" draggable="false" class="fk-card-img" data-fallback="' + esc(localFallback) + '" onload="this.classList.add(\'is-loaded\'); this.closest(\'.fk-card\')?.classList.add(\'is-seen\');" onerror="window.handleCardImgError ? window.handleCardImgError(this) : null;" />';
+    return '<img src="' + cleanUrl + '" alt="' + esc(title) + '" loading="' + (isEager ? 'eager' : 'lazy') + '" decoding="async" fetchpriority="' + (isEager ? 'high' : 'low') + '" draggable="false" class="fk-card-img" data-fallback="' + esc(localFallback) + '" onload="this.classList.add(\'is-loaded\'); var m=this.closest(\'.fk-card-media\'); if(m) m.classList.add(\'is-media-loaded\');" onerror="window.handleCardImgError ? window.handleCardImgError(this) : null;" />';
   }
 
   function buildCard(id, cat, cardIndex) {
@@ -160,7 +165,9 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
 
     const badgeIconClass = (cat.badgeIcon || '').trim() || 'fa-sparkles';
     const badgeIconHtml = '<i class="fa-solid ' + esc(badgeIconClass) + '" ' + badgeIconStyle + '></i>';
-    const badgeHtml = customBadge ? '<div class="fk-card-badges-row"><span class="fk-card-badge-vip' + badgeColorClass + '" ' + badgeInlineStyle + '>' + badgeIconHtml + ' ' + esc(customBadge) + '</span></div>' : '';
+    const hasVideo = Boolean((cat.video && String(cat.video).trim()) || (cat.videos && cat.videos.length) || (media.videos && media.videos.length));
+    const videoPillHtml = hasVideo ? '<span class="fk-card-badge-hdr"><i class="fa-solid fa-play" style="color:#f43f5e;font-size:8px;"></i> 4K Video</span>' : '';
+    const badgeHtml = (customBadge || hasVideo) ? '<div class="fk-card-badges-row">' + (customBadge ? '<span class="fk-card-badge-vip' + badgeColorClass + '" ' + badgeInlineStyle + '>' + badgeIconHtml + ' ' + esc(customBadge) + '</span>' : '') + videoPillHtml + '</div>' : '';
 
     return '<div class="fk-card" data-fb-id="' + esc(id) + '" data-slug="' + esc(cat.slug||'') + '" data-product-id="' + esc(id) + '" id="product-' + esc(id) + '">' +
       badgeHtml +
@@ -174,7 +181,7 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
         '<div class="fk-card-slides-track">' +
           images.map((imgUrl, idx) => (
             '<div class="fk-card-slide' + (idx === 0 ? ' is-active' : '') + '" data-idx="' + idx + '">' +
-              makeCardImgHtml(imgUrl, baseTitle, (cardIndex < 4 && idx === 0), idx > 0) +
+              makeCardImgHtml(imgUrl, baseTitle, (cardIndex < 8 && idx === 0), idx > 0, hasVideo) +
             '</div>'
           )).join('') +
         '</div>' +
@@ -190,7 +197,7 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
       '</div>'
       ) : (
       '<div class="fk-card-media" onclick="window.openFkProductPage(\'' + esc(id) + '\')">' +
-        makeCardImgHtml(firstImg, baseTitle, cardIndex < 4) +
+        makeCardImgHtml(firstImg, baseTitle, cardIndex < 8, false, hasVideo) +
         '<div class="fk-card-media-gradient"></div>' +
         '<div class="fk-card-quick-view-overlay"><i class="fa-solid fa-expand"></i> Quick View</div>' +
       '</div>'
@@ -273,7 +280,9 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
       if (catData.products && Object.keys(catData.products).length) {
         const prods = Object.entries(catData.products).map(([k, p]) => Object.assign({ id: k }, p));
         prods.sort((a,b) => (Number(a.displayOrder||a.sourceOrder||999) - Number(b.displayOrder||b.sourceOrder||999)));
-        grid.innerHTML = prods.map((p, idx) => buildCard(p.id, p, idx)).join('');
+        const html = prods.map((p, idx) => buildCard(p.id, p, idx)).join('');
+        grid._lastRenderedHtml = html;
+        grid.innerHTML = html;
       }
     } catch(err) {
       console.warn('Instant boot warning:', err);

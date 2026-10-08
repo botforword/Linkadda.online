@@ -4589,12 +4589,13 @@ body.in-search-view #fkMobileAppbar,
   align-items: center;
   gap: 16px;
   width: max-content;
-  animation: marqueeTrackGlide 90s linear infinite;
+  animation: marqueeTrackGlide 220s linear infinite;
   white-space: nowrap;
   will-change: transform;
 }
 
-.live-activity-bar:hover .marquee-track {
+.live-activity-bar:hover .marquee-track,
+.live-activity-bar:active .marquee-track {
   animation-play-state: paused;
 }
 
@@ -5581,58 +5582,84 @@ body.in-search-view #fkMobileAppbar,
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
-    padding: 6px 0 20px !important;
+    padding: 6px 0 24px !important;
+    contain: layout style !important;
+    transform: translateZ(0) !important;
   }
 
   .fk-card,
   .pcard {
-    border-radius: 16px !important;
-    background: rgba(16, 14, 25, 0.94) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
-    padding: 8px !important;
+    border-radius: 18px !important;
+    background: linear-gradient(180deg, rgba(22, 19, 36, 0.94) 0%, rgba(13, 11, 22, 0.98) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    padding: 7px !important;
     display: flex !important;
     flex-direction: column !important;
     position: relative !important;
     overflow: hidden !important;
-    transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+    content-visibility: auto !important;
+    contain-intrinsic-size: 0 400px !important;
+    contain: layout paint !important;
+    transform: translateZ(0) !important;
+    box-sizing: border-box !important;
   }
 
   [data-theme="light"] .fk-card,
   [data-theme="light"] .pcard {
     background: #ffffff !important;
     border-color: #e2e8f0 !important;
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05) !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06), inset 0 1px 0 #ffffff !important;
   }
 
   .fk-card:active,
   .pcard:active {
-    transform: scale(0.97) !important;
+    transform: scale(0.975) translateZ(0) !important;
   }
 
   /* Media container */
   .fk-card-media,
   .pcard-img-wrap {
     width: 100% !important;
-    margin: 0 0 8px 0 !important;
+    margin: 0 0 7px 0 !important;
     aspect-ratio: 1 / 1 !important;
-    border-radius: 12px !important;
+    border-radius: 13px !important;
     overflow: hidden !important;
     position: relative !important;
-    background: #090810 !important;
+    background: linear-gradient(90deg, #12101e 0%, #1c1830 50%, #12101e 100%) !important;
+    background-size: 200% 100% !important;
+    animation: fkMediaShimmer 2.2s infinite ease-in-out !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .fk-card-media.is-media-loaded {
+    animation: none !important;
   }
 
   [data-theme="light"] .fk-card-media,
   [data-theme="light"] .pcard-img-wrap {
-    background: #f8fafc !important;
+    background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%) !important;
+    background-size: 200% 100% !important;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
   }
 
   .fk-card-media img,
-  .pcard-img-wrap img {
+  .pcard-img-wrap img,
+  .fk-card-slide img {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
-    border-radius: 12px !important;
+    border-radius: 13px !important;
+    display: block !important;
+    opacity: 0;
+    transition: opacity 0.28s ease !important;
+  }
+
+  .fk-card-media img.is-loaded,
+  .pcard-img-wrap img.is-loaded,
+  .fk-card-slide img.is-loaded {
+    opacity: 1 !important;
   }
 
   /* Floating Heart Wishlist Icon */
@@ -5641,10 +5668,10 @@ body.in-search-view #fkMobileAppbar,
     width: 30px !important;
     height: 30px !important;
     border-radius: 50% !important;
-    background: rgba(14, 11, 24, 0.94) !important;
+    background: rgba(14, 11, 24, 0.92) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     position: absolute !important;
     top: 6px !important;
     right: 6px !important;
@@ -5654,7 +5681,8 @@ body.in-search-view #fkMobileAppbar,
     color: #ffffff !important;
     font-size: 0.78rem !important;
     z-index: 10 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background 0.18s !important;
   }
 
   .fk-card-wishlist-btn:active,
@@ -5664,9 +5692,10 @@ body.in-search-view #fkMobileAppbar,
 
   .fk-card-wishlist-btn.active,
   .pcard-wishlist-btn.active {
-    background: #ff2a8d !important;
+    background: linear-gradient(135deg, #ff2a8d, #e1143c) !important;
     color: #ffffff !important;
     border-color: #ff2a8d !important;
+    box-shadow: 0 3px 12px rgba(255, 42, 141, 0.45) !important;
   }
 
   /* Quality / Rating Badges on Card Media */
@@ -5679,14 +5708,19 @@ body.in-search-view #fkMobileAppbar,
     font-size: 0.65rem !important;
     font-weight: 800 !important;
     border-radius: 9999px !important;
-    background: rgba(15, 23, 42, 0.94) !important;
+    background: rgba(14, 11, 24, 0.92) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: #ffffff !important;
     z-index: 8 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.3px !important;
+    letter-spacing: 0.35px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    max-width: calc(100% - 44px) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 
   /* Card Body & Title */
@@ -5696,6 +5730,7 @@ body.in-search-view #fkMobileAppbar,
     display: flex !important;
     flex-direction: column !important;
     flex: 1 !important;
+    gap: 2px !important;
   }
 
   .fk-card-title,
@@ -5703,13 +5738,14 @@ body.in-search-view #fkMobileAppbar,
     font-size: 0.82rem !important;
     font-weight: 750 !important;
     line-height: 1.32 !important;
-    color: #ffffff !important;
-    margin: 0 0 6px 0 !important;
+    color: #f8fafc !important;
+    margin: 0 !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
-    min-height: 2.2em !important;
+    min-height: 2.18em !important;
+    letter-spacing: -0.15px !important;
   }
 
   [data-theme="light"] .fk-card-title,
@@ -5722,97 +5758,189 @@ body.in-search-view #fkMobileAppbar,
   .pcard-price-row {
     display: flex !important;
     align-items: baseline !important;
+    justify-content: space-between !important;
     flex-wrap: wrap !important;
     gap: 4px !important;
     margin-top: auto !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .fk-dual-price {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    gap: 3px !important;
+    white-space: nowrap !important;
   }
 
   .fk-card-price-current,
-  .pcard-price {
-    font-size: 1rem !important;
-    font-weight: 900 !important;
+  .pcard-price,
+  .fk-price-inr {
+    font-size: 1.05rem !important;
+    font-weight: 850 !important;
     color: #ffffff !important;
     letter-spacing: -0.3px !important;
   }
 
   [data-theme="light"] .fk-card-price-current,
-  [data-theme="light"] .pcard-price {
+  [data-theme="light"] .pcard-price,
+  [data-theme="light"] .fk-price-inr {
     color: #0f172a !important;
   }
 
+  .fk-price-usd {
+    font-size: 0.66rem !important;
+    font-weight: 800 !important;
+    color: #fda4af !important;
+    background: rgba(225, 29, 72, 0.14) !important;
+    border: 1px solid rgba(225, 29, 72, 0.28) !important;
+    border-radius: 4px !important;
+    padding: 1px 4px !important;
+    letter-spacing: 0.1px !important;
+  }
+
+  [data-theme="light"] .fk-price-usd {
+    color: #be123c !important;
+    background: rgba(225, 29, 72, 0.08) !important;
+    border-color: rgba(225, 29, 72, 0.18) !important;
+  }
+
+  .fk-price-sub-row {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    gap: 3px !important;
+    white-space: nowrap !important;
+  }
+
   .fk-card-price-cut,
-  .pcard-mrp {
-    font-size: 0.72rem !important;
-    color: #94a3b8 !important;
+  .pcard-mrp,
+  .fk-mrp-cut {
+    font-size: 0.7rem !important;
+    color: #64748b !important;
     text-decoration: line-through !important;
+    opacity: 0.8 !important;
   }
 
   .fk-card-discount-pill,
-  .pcard-discount {
+  .pcard-discount,
+  .fk-discount-tag {
     font-size: 0.62rem !important;
     font-weight: 800 !important;
-    padding: 2px 5px !important;
+    padding: 1px 5px !important;
     border-radius: 4px !important;
     background: rgba(16, 185, 129, 0.15) !important;
     color: #10b981 !important;
     border: 1px solid rgba(16, 185, 129, 0.3) !important;
   }
 
-  /* Card CTA Buttons */
+  [data-theme="light"] .fk-discount-tag,
+  [data-theme="light"] .fk-card-discount-pill {
+    color: #059669 !important;
+    background: #ecfdf5 !important;
+    border-color: rgba(16, 185, 129, 0.25) !important;
+  }
+
+  /* Card CTA Buttons (Cart + Buy Now) */
   .fk-card-cta-row,
-  .pcard-actions {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
+  .pcard-actions,
+  .fk-card-actions-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1.3fr !important;
+    gap: 5px !important;
     margin-top: 2px !important;
+    padding-top: 5px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+  }
+
+  [data-theme="light"] .fk-card-cta-row,
+  [data-theme="light"] .fk-card-actions-row {
+    border-top: 1px solid #f1f5f9 !important;
   }
 
   .fk-card-add-cart-btn,
-  .btn-card-add-cart {
-    width: 34px !important;
+  .btn-card-add-cart,
+  .fk-card-btn-cart {
     height: 34px !important;
     border-radius: 10px !important;
-    background: rgba(255, 255, 255, 0.08) !important;
+    background: rgba(255, 255, 255, 0.07) !important;
     border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    color: #ffffff !important;
+    color: #f1f5f9 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-size: 0.85rem !important;
+    font-size: 0.74rem !important;
+    font-weight: 800 !important;
     cursor: pointer !important;
-    flex-shrink: 0 !important;
+    gap: 4px !important;
+    padding: 0 4px !important;
+    transition: transform 0.16s ease, background 0.16s !important;
+    user-select: none !important;
+  }
+
+  .fk-card-btn-cart i {
+    font-size: 0.72rem !important;
+    color: #fda4af !important;
+  }
+
+  .fk-card-btn-cart.added,
+  .fk-card-btn-cart.in-cart {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border-color: #059669 !important;
+    color: #ffffff !important;
+  }
+
+  .fk-card-btn-cart.added i,
+  .fk-card-btn-cart.in-cart i {
+    color: #ffffff !important;
   }
 
   [data-theme="light"] .fk-card-add-cart-btn,
-  [data-theme="light"] .btn-card-add-cart {
-    background: #f1f5f9 !important;
+  [data-theme="light"] .btn-card-add-cart,
+  [data-theme="light"] .fk-card-btn-cart {
+    background: #f8fafc !important;
     border-color: #cbd5e1 !important;
     color: #1e293b !important;
   }
 
+  [data-theme="light"] .fk-card-btn-cart i {
+    color: #e11d48 !important;
+  }
+
+  .fk-card-add-cart-btn:active,
+  .btn-card-add-cart:active,
+  .fk-card-btn-cart:active {
+    transform: scale(0.94) !important;
+  }
+
   .fk-card-buy-btn,
-  .btn-card-buy-now {
-    flex: 1 !important;
+  .btn-card-buy-now,
+  .fk-card-btn-buy {
     height: 34px !important;
     border-radius: 10px !important;
-    background: linear-gradient(135deg, #ff2a8d, #8b5cf6) !important;
+    background: linear-gradient(135deg, #ff2a8d 0%, #ff5e62 100%) !important;
     color: #ffffff !important;
     font-weight: 800 !important;
-    font-size: 0.78rem !important;
+    font-size: 0.75rem !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 5px !important;
+    gap: 4px !important;
     text-decoration: none !important;
     border: none !important;
-    box-shadow: 0 3px 12px rgba(255, 42, 141, 0.35) !important;
-    transition: transform 0.15s ease !important;
+    box-shadow: 0 3px 12px rgba(255, 42, 141, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    transition: transform 0.16s ease !important;
+    user-select: none !important;
+  }
+
+  .fk-card-btn-buy i {
+    color: #ffffff !important;
+    font-size: 0.72rem !important;
   }
 
   .fk-card-buy-btn:active,
-  .btn-card-buy-now:active {
+  .btn-card-buy-now:active,
+  .fk-card-btn-buy:active {
     transform: scale(0.94) !important;
+    box-shadow: 0 1px 6px rgba(255, 42, 141, 0.3) !important;
   }
 
   /* ── 6. NATIVE BOTTOM NAVIGATION DOCK (5 HIGH-CONVERTING TABS) ── */

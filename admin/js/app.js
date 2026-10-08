@@ -3967,12 +3967,12 @@ function renderCatalogActionMenu(item, node) {
       <summary aria-label="More actions"><i data-lucide="ellipsis"></i><span>More</span></summary>
       <div class="catalog-card-menu-panel">
         <button type="button" class="catalog-card-menu-item" data-action="share-product" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="share-2"></i> Share Product</button>
-        ${isCategory ? `
-          <button type="button" class="catalog-card-menu-item" data-action="move-up" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="arrow-up"></i> Move up</button>
-          <button type="button" class="catalog-card-menu-item" data-action="move-down" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="arrow-down"></i> Move down</button>
-        ` : `
+        <button type="button" class="catalog-card-menu-item" data-action="move-position" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="arrow-up-down"></i> Move Position</button>
+        <button type="button" class="catalog-card-menu-item" data-action="move-up" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="arrow-up"></i> Move Up</button>
+        <button type="button" class="catalog-card-menu-item" data-action="move-down" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="arrow-down"></i> Move Down</button>
+        ${!isCategory ? `
           <button type="button" class="catalog-card-menu-item" data-action="duplicate" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="copy"></i> Duplicate</button>
-        `}
+        ` : ''}
         <button type="button" class="catalog-card-menu-item" data-action="toggle" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="${toggleIcon}"></i> ${toggleAction}</button>
         <button type="button" class="catalog-card-menu-item danger" data-action="delete" data-node="${node}" data-id="${escapeHtml(item.id)}"><i data-lucide="trash-2"></i> Delete</button>
       </div>
@@ -4772,10 +4772,29 @@ function filterItems(items, node = 'products') {
   const source = Array.isArray(items)
     ? items
     : Object.entries(items || {}).map(([id, item]) => ({ id, ...(item || {}) }));
-  let list = [...source];
+  let list = source.filter((item) => item && typeof item === 'object' && !String(item.id || '').includes('/'));
   if (ui.search) {
-    const term = ui.search.toLowerCase();
-    list = list.filter((item) => JSON.stringify(item).toLowerCase().includes(term));
+    const term = ui.search.trim().toLowerCase();
+    if (term) {
+      list = list.filter((item) => {
+        if (!item) return false;
+        const text = [
+          item.title,
+          item.name,
+          item.slug,
+          item.category,
+          item.description,
+          item.badge,
+          item.platforms,
+          item.creators,
+          item.priceINR,
+          item.priceUSD,
+          Array.isArray(item.features) ? item.features.join(' ') : item.features,
+          Array.isArray(item.tags) ? item.tags.join(' ') : item.tags,
+        ].filter(Boolean).join(' ').toLowerCase();
+        return text.includes(term);
+      });
+    }
   }
   if (ui.filters.status && ui.filters.status !== 'all') {
     list = list.filter((item) => String(item.status || 'active') === ui.filters.status);
@@ -4790,7 +4809,7 @@ function filterItems(items, node = 'products') {
   if (ui.sort === 'title') {
     list.sort((a, b) => String(a.title || '').localeCompare(String(b.title || '')));
   } else if (ui.sort === 'displayOrder') {
-    list.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    list.sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0));
   } else {
     list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
@@ -4923,8 +4942,8 @@ async function reorderProductPosition(itemId, targetPosInput) {
   const node = ui.catalogTab === 'categories' ? 'categories' : 'products';
   const nodeLabel = node === 'categories' ? 'Category' : 'Product';
   const allItems = listCollection(node)
-    .filter((item) => item.status !== 'deleted')
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0) || (a.createdAt || 0) - (b.createdAt || 0));
+    .filter((item) => item.status !== 'deleted' && !String(item.id || '').includes('/'))
+    .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0) || (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
 
   if (!allItems.length) return;
 
@@ -4957,12 +4976,17 @@ async function reorderProductPosition(itemId, targetPosInput) {
 
   listWithoutTarget.forEach((item, index) => {
     const newPos = index + 1;
-    if (item.displayOrder !== newPos) {
+    if (Number(item.displayOrder) !== newPos) {
       updates[`${item.id}/displayOrder`] = newPos;
       updates[`${item.id}/updatedAt`] = Date.now();
+      item.displayOrder = newPos;
       modifiedCount += 1;
     }
   });
+
+  // Switch sort to displayOrder so the newly moved item stays exactly at targetPos in the UI
+  ui.sort = 'displayOrder';
+  persistCatalogPrefs();
 
   if (modifiedCount > 0) {
     try {
@@ -4976,6 +5000,7 @@ async function reorderProductPosition(itemId, targetPosInput) {
     }
   } else {
     showToast(`${nodeLabel} at position #${targetPos}`);
+    renderView(ui.data || {});
   }
 }
 
@@ -5017,10 +5042,10 @@ function openMovePositionModal(itemId) {
         </div>
         <!-- Quick Touch Helper Chips on Mobile & Desktop -->
         <div class="quick-pos-chips" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('targetPosInput').value = 1;" style="font-size: 0.75rem; padding: 4px 8px;"><i data-lucide="chevrons-up"></i> Top #1</button>
-          ${currentPos > 1 ? `<button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('targetPosInput').value = Math.max(1, ${currentPos - 1});" style="font-size: 0.75rem; padding: 4px 8px;"><i data-lucide="chevron-up"></i> Up 1 (${currentPos - 1})</button>` : ''}
-          ${currentPos < totalCount ? `<button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('targetPosInput').value = Math.min(${totalCount}, ${currentPos + 1});" style="font-size: 0.75rem; padding: 4px 8px;"><i data-lucide="chevron-down"></i> Down 1 (${currentPos + 1})</button>` : ''}
-          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('targetPosInput').value = ${totalCount};" style="font-size: 0.75rem; padding: 4px 8px;"><i data-lucide="chevrons-down"></i> Bottom #${totalCount}</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-set-pos="1" onclick="document.getElementById('targetPosInput').value = 1;" style="font-size: 0.75rem; padding: 4px 8px;"><i data-lucide="chevrons-up"></i> Top #1</button>
+          ${currentPos > 1 ? `<button type="button" class="btn btn-ghost btn-sm" data-set-pos="${Math.max(1, currentPos - 1)}" onclick="document.getElementById('targetPosInput').value = Math.max(1, ${currentPos - 1});" style="font-size: 0.75rem; padding: 4px 8px;"><i data-lucide="chevron-up"></i> Up 1 (${currentPos - 1})</button>` : ''}
+          ${currentPos < totalCount ? `<button type="button" class="btn btn-ghost btn-sm" data-set-pos="${Math.min(totalCount, currentPos + 1)}" onclick="document.getElementById('targetPosInput').value = Math.min(${totalCount}, ${currentPos + 1});" style="font-size: 0.75rem; padding: 4px 8px;"><i data-lucide="chevron-down"></i> Down 1 (${currentPos + 1})</button>` : ''}
+          <button type="button" class="btn btn-ghost btn-sm" data-set-pos="${totalCount}" onclick="document.getElementById('targetPosInput').value = ${totalCount};" style="font-size: 0.75rem; padding: 4px 8px;"><i data-lucide="chevrons-down"></i> Bottom #${totalCount}</button>
         </div>
         <small style="color:var(--muted);font-size:0.78rem;margin-top:6px;display:block;">All ${nodeLabel.toLowerCase()}s will automatically shift into their new sequence.</small>
       </div>
@@ -5034,6 +5059,15 @@ function openMovePositionModal(itemId) {
   if (window.lucide) lucide.createIcons();
 
   const form = document.getElementById('movePositionForm');
+  form?.querySelectorAll('[data-set-pos]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetInput = document.getElementById('targetPosInput');
+      if (targetInput && btn.dataset.setPos) {
+        targetInput.value = btn.dataset.setPos;
+      }
+    });
+  });
+
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btnSubmit = document.getElementById('btnSubmitMove');
@@ -5148,10 +5182,13 @@ function openMoveCategoryModal(ids) {
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const category = form.querySelector('[name="category"]').value;
-    for (const id of ids) {
-      await updateRecord('products', id, { category });
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Moving...';
     }
-    showToast('Products moved');
+    await Promise.all(ids.map((id) => updateRecord('products', id, { category })));
+    showToast(`Products moved to ${category}`);
     clearSelection();
     closeModal();
     renderView(ui.data || {});
@@ -7058,7 +7095,7 @@ function renderOrderDetailsModal(item = {}) {
       <!-- Action Toolbar -->
       <div class="toolbar" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-bottom: 20px;">
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-danger btn-sm" type="button" data-action="delete-order" data-id="${escapeHtml(item.id || '')}" style="font-size: 12px; padding: 8px 14px;">
+          <button class="btn btn-danger btn-sm" type="button" data-action="delete-order" data-id="${escapeHtml(item.id || item.orderId || '')}" style="font-size: 12px; padding: 8px 14px;">
             <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Delete Order
           </button>
         </div>
@@ -7067,10 +7104,10 @@ function renderOrderDetailsModal(item = {}) {
           <button class="btn btn-ghost" type="button" data-close-modal onclick="closeModal()" style="font-size: 13px; padding: 8px 16px;">
             Close
           </button>
-          <button class="btn btn-ghost" type="button" data-action="reject-order" data-id="${escapeHtml(item.id || '')}" style="font-size: 13px; padding: 8px 16px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
+          <button class="btn btn-ghost" type="button" data-action="reject-order" data-id="${escapeHtml(item.id || item.orderId || '')}" style="font-size: 13px; padding: 8px 16px; color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
             <i data-lucide="x-circle" style="width: 15px; height: 15px;"></i> Reject Payment
           </button>
-          <button class="btn btn-primary" type="button" data-action="approve-order" data-id="${escapeHtml(item.id || '')}" style="font-size: 13px; padding: 8px 20px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669) !important; border: none !important; color: white !important; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+          <button class="btn btn-primary" type="button" data-action="approve-order" data-id="${escapeHtml(item.id || item.orderId || '')}" style="font-size: 13px; padding: 8px 20px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669) !important; border: none !important; color: white !important; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
             <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Approve & Verify Order
           </button>
         </div>
@@ -7277,6 +7314,9 @@ function renderOrdersManagementView(data = {}, fullData = {}) {
                           <i data-lucide="x" style="width: 13px; height: 13px;"></i>
                         </button>
                       ` : ''}
+                      <button class="order-quick-btn delete" type="button" data-action="delete-order" data-id="${escapeHtml(item.id)}" title="Delete Order" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.35);">
+                        <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -9566,6 +9606,25 @@ function renderView(data) {
     ui.data = data;
     sideNav.innerHTML = navMarkup();
     const current = ui.route;
+
+    // Preserve active input/textarea focus & cursor if user is actively typing
+    const activeEl = document.activeElement;
+    const isInputActive = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+    const activeId = isInputActive ? activeEl.id : null;
+    const activeVal = isInputActive ? activeEl.value : null;
+    const selStart = isInputActive ? activeEl.selectionStart : null;
+    const selEnd = isInputActive ? activeEl.selectionEnd : null;
+
+    // If user is currently typing in catalog search and catalog view is already mounted, do soft update instead of wiping viewRoot
+    if (activeId === 'collectionSearch' && (current === 'catalog' || current === 'products' || current === 'categories')) {
+      const resultsEl = document.getElementById('catalogResultsGrid');
+      if (resultsEl) {
+        softUpdateCatalog();
+        if (notifyCount) notifyCount.textContent = String(recentActivity(12).length);
+        return;
+      }
+    }
+
     let html = '';
     if (current === 'dashboard') html = renderDashboard(data);
     else if (current === 'catalog' || current === 'products' || current === 'categories') html = renderCatalogView(data);
@@ -9590,6 +9649,22 @@ function renderView(data) {
     if (notifyCount) {
       notifyCount.textContent = String(recentActivity(12).length);
     }
+
+    // Restore focus and cursor seamlessly if input was recreated
+    if (activeId) {
+      const restored = document.getElementById(activeId);
+      if (restored) {
+        if (typeof activeVal === 'string' && restored.value !== activeVal) {
+          restored.value = activeVal;
+        }
+        restored.focus();
+        if (typeof selStart === 'number' && typeof restored.setSelectionRange === 'function') {
+          try {
+            restored.setSelectionRange(selStart, selEnd);
+          } catch (_) {}
+        }
+      }
+    }
   } catch (error) {
     viewRoot.innerHTML = `
       <div class="page active">
@@ -9603,64 +9678,74 @@ function renderView(data) {
 }
 
 let _searchDebounceTimer = null;
+let _generalSearchDebounceTimer = null;
 function softUpdateCatalog() {
-  // Update only catalog results + pagination without destroying the whole view
-  // This keeps search input focused and cursor position intact
-  const resultsEl = document.getElementById('catalogResultsGrid');
-  const paginationEl = document.querySelector('.catalog-pagination');
-  if (!resultsEl) {
-    // Fallback: full render if not in catalog view
-    renderView(ui.data || {});
-    return;
-  }
-  const meta = getCatalogMeta();
-  const nodeData = listCollection(meta.node);
-  const items = filterItems(nodeData, meta.node);
-  const pageSize = Math.max(4, Number(ui.catalogPageSize) || 8);
-  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
-  const page = Math.min(Math.max(1, ui.page), totalPages);
-  const paged = items.slice((page - 1) * pageSize, page * pageSize);
-  ui.page = page;
-  const node = meta.node;
-  const itemLabel = node === 'categories' ? 'categories' : 'products';
-  const itemSingular = meta.schema?.label?.toLowerCase() || 'item';
-  const isCatalog = node === 'products' || node === 'categories';
+  try {
+    // Update only catalog results + pagination without destroying the whole view
+    // This keeps search input focused and cursor position intact
+    const resultsEl = document.getElementById('catalogResultsGrid');
+    const paginationEl = document.querySelector('.catalog-pagination');
+    if (!resultsEl) {
+      // Fallback: full render if not in catalog view
+      renderView(ui.data || {});
+      return;
+    }
+    const meta = getCatalogMeta();
+    const nodeData = listCollection(meta.node);
+    const items = filterItems(nodeData, meta.node);
+    const pageSize = Math.max(4, Number(ui.catalogPageSize) || 8);
+    const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+    const page = Math.min(Math.max(1, ui.page), totalPages);
+    const paged = items.slice((page - 1) * pageSize, page * pageSize);
+    ui.page = page;
+    const node = meta.node;
+    const itemLabel = node === 'categories' ? 'categories' : 'products';
+    const isCatalog = node === 'products' || node === 'categories';
 
-  if (paged.length) {
-    resultsEl.className = `catalog-results ${ui.catalogView}`;
-    resultsEl.innerHTML = paged.map((item) => (node === 'categories'
-      ? renderCatalogCategoryCard(item, node)
-      : renderCatalogProductCard(item, node))).join('');
-  } else {
-    resultsEl.className = `catalog-results ${ui.catalogView}`;
-    resultsEl.innerHTML = `
-      <div class="catalog-empty glass">
-        <div class="catalog-empty-art">
-          <div class="orb orb-a"></div>
-          <div class="orb orb-b"></div>
-          <i data-lucide="sparkles"></i>
+    if (paged.length) {
+      resultsEl.className = `catalog-results ${ui.catalogView}`;
+      resultsEl.innerHTML = paged.map((item) => (node === 'categories'
+        ? renderCatalogCategoryCard(item, node)
+        : renderCatalogProductCard(item, node))).join('');
+    } else {
+      resultsEl.className = `catalog-results ${ui.catalogView}`;
+      resultsEl.innerHTML = `
+        <div class="catalog-empty glass">
+          <div class="catalog-empty-art">
+            <div class="orb orb-a"></div>
+            <div class="orb orb-b"></div>
+            <i data-lucide="sparkles"></i>
+          </div>
+          <h3>No ${escapeHtml(itemLabel)} matched your search.</h3>
+          <p>Try a different search term or reset filters.</p>
         </div>
-        <h3>No ${escapeHtml(itemLabel)} matched your search.</h3>
-        <p>Try a different search term or reset filters.</p>
-      </div>
-    `;
+      `;
+    }
+    if (paginationEl) {
+      const visibleStart = items.length ? ((page - 1) * pageSize) + 1 : 0;
+      const visibleEnd = Math.min(items.length, page * pageSize);
+      const totalSelected = ui.selection.size;
+      paginationEl.innerHTML = `
+        <span class="section-subtitle">Showing ${escapeHtml(String(visibleStart))}-${escapeHtml(String(visibleEnd))} of ${escapeHtml(String(items.length))} ${escapeHtml(itemLabel)}${totalSelected ? ` · ${escapeHtml(String(totalSelected))} selected` : ''}</span>
+        <div class="toolbar catalog-pagination-actions">
+          <span class="chip">Rows ${escapeHtml(String(pageSize))}</span>
+          <button class="btn btn-ghost" data-page="prev"><i data-lucide="chevron-left"></i></button>
+          <span class="chip">Page ${escapeHtml(String(page))} / ${escapeHtml(String(totalPages))}</span>
+          <button class="btn btn-ghost" data-page="next"><i data-lucide="chevron-right"></i></button>
+        </div>
+      `;
+    }
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+      try {
+        lucide.createIcons({ root: resultsEl });
+      } catch (_) {
+        try { lucide.createIcons(); } catch (_) {}
+      }
+    }
+    initCatalogDragAndDrop();
+  } catch (err) {
+    console.error('softUpdateCatalog error:', err);
   }
-  if (paginationEl) {
-    const visibleStart = items.length ? ((page - 1) * pageSize) + 1 : 0;
-    const visibleEnd = Math.min(items.length, page * pageSize);
-    const totalSelected = ui.selection.size;
-    paginationEl.innerHTML = `
-      <span class="section-subtitle">Showing ${escapeHtml(String(visibleStart))}-${escapeHtml(String(visibleEnd))} of ${escapeHtml(String(items.length))} ${escapeHtml(itemLabel)}${totalSelected ? ` · ${escapeHtml(String(totalSelected))} selected` : ''}</span>
-      <div class="toolbar catalog-pagination-actions">
-        <span class="chip">Rows ${escapeHtml(String(pageSize))}</span>
-        <button class="btn btn-ghost" data-page="prev"><i data-lucide="chevron-left"></i></button>
-        <span class="chip">Page ${escapeHtml(String(page))} / ${escapeHtml(String(totalPages))}</span>
-        <button class="btn btn-ghost" data-page="next"><i data-lucide="chevron-right"></i></button>
-      </div>
-    `;
-  }
-  if (window.lucide) lucide.createIcons();
-  initCatalogDragAndDrop();
 }
 
 let routeProgressBar = null;
@@ -10957,8 +11042,14 @@ function attachGlobalHandlers() {
       return;
     }
     if (action === 'view-order' || action === 'open-order') {
-      const order = getItem('orders', id);
-      openModal(renderOrderDetailsModal(order || {}));
+      const allOrders = listCollection('orders') || [];
+      const order = getItem('orders', id) || allOrders.find(o => String(o.id) === String(id) || String(o.orderId) === String(id)) || {};
+      const orderWithId = {
+        ...order,
+        id: order.id || id || order.orderId || '',
+        orderId: order.orderId || order.id || id || ''
+      };
+      openModal(renderOrderDetailsModal(orderWithId));
       return;
     }
     if (action === 'export-admin-snapshot') {
@@ -11267,22 +11358,96 @@ function attachGlobalHandlers() {
       return;
     }
     if (action === 'reject-order') {
-      await updateRecord('orders', id, {
-        status: 'rejected',
-        orderStatus: 'rejected',
-        paymentStatus: 'rejected',
-        reviewedAt: Date.now(),
-        reviewedBy: userEmail?.textContent || userName?.textContent || APP_CONFIG.appName,
-      });
-      closeModal();
-      showToast('Order rejected');
+      const targetOrderId = id || actionBtn.dataset.id;
+      if (!targetOrderId) {
+        closeModal();
+        showToast('Order ID not found', 'warning');
+        return;
+      }
+      actionBtn.disabled = true;
+      try {
+        await updateRecord('orders', targetOrderId, {
+          status: 'rejected',
+          orderStatus: 'rejected',
+          paymentStatus: 'rejected',
+          reviewedAt: Date.now(),
+          reviewedBy: userEmail?.textContent || userName?.textContent || APP_CONFIG.appName,
+        });
+        showToast('Order marked as rejected', 'info');
+      } catch (err) {
+        showToast('Failed to reject order: ' + (err?.message || err), 'danger');
+      } finally {
+        closeModal();
+        renderView(ui.data || {});
+      }
       return;
     }
     if (action === 'delete-order') {
-      if (confirm('Delete this order?')) {
-        await deleteRecord('orders', id);
+      let targetOrderId = id || actionBtn.dataset.id;
+      if (!targetOrderId) {
+        const badge = document.querySelector('#modalRoot [data-action="copy-order-id"]');
+        if (badge && badge.dataset.id && badge.dataset.id !== '-') {
+          targetOrderId = badge.dataset.id;
+        }
+      }
+
+      if (!confirm('Are you sure you want to permanently delete this order?\n\nThis record will be removed from database and live queue.')) {
+        return;
+      }
+
+      actionBtn.disabled = true;
+      const origHtml = actionBtn.innerHTML;
+      actionBtn.innerHTML = '<i data-lucide="loader-2" class="spin" style="width: 14px; height: 14px;"></i> Deleting...';
+      if (window.lucide) lucide.createIcons();
+
+      try {
+        if (targetOrderId) {
+          // 1. Delete from orders collection in state manager & RTDB
+          await deleteRecord('orders', targetOrderId);
+
+          // 2. Direct companion node cleanup in RTDB
+          try {
+            await remove(ref(db, `orders/${targetOrderId}`));
+          } catch (_) {}
+          try {
+            await remove(ref(db, `order_approvals/${targetOrderId}`));
+          } catch (_) {}
+
+          // 3. Purge from settings.recentApproved pool if present
+          try {
+            const currentSettings = ui.data?.settings || {};
+            if (Array.isArray(currentSettings.recentApproved)) {
+              const filteredApproved = currentSettings.recentApproved.filter(
+                (o) => String(o.id) !== String(targetOrderId) && String(o.orderId) !== String(targetOrderId)
+              );
+              if (filteredApproved.length !== currentSettings.recentApproved.length) {
+                await updateRecord('settings', null, {
+                  ...currentSettings,
+                  recentApproved: filteredApproved,
+                });
+              }
+            }
+          } catch (_) {}
+
+          // 4. Force-purge from ui.data reactive state in memory
+          if (ui.data?.orders) {
+            delete ui.data.orders[targetOrderId];
+            for (const k of Object.keys(ui.data.orders)) {
+              const o = ui.data.orders[k];
+              if (o && (String(o.id) === String(targetOrderId) || String(o.orderId) === String(targetOrderId))) {
+                delete ui.data.orders[k];
+              }
+            }
+          }
+        }
+
+        showToast('Order deleted permanently.', 'success');
+      } catch (err) {
+        console.error('Delete order error:', err);
+        showToast('Failed to delete order: ' + (err?.message || err), 'danger');
+      } finally {
         closeModal();
-        showToast('Order deleted');
+        renderView(ui.data || {});
       }
       return;
     }
@@ -11690,41 +11855,51 @@ function attachGlobalHandlers() {
     if (event.target.id === 'collectionSearch') {
       ui.search = event.target.value;
       ui.page = 1;
-      persistCatalogPrefs();
-      // Debounced soft update — preserves focus and cursor position
+      // Debounced soft update — preserves focus and cursor position smoothly
       clearTimeout(_searchDebounceTimer);
-      _searchDebounceTimer = setTimeout(() => softUpdateCatalog(), 180);
+      _searchDebounceTimer = setTimeout(() => {
+        persistCatalogPrefs();
+        softUpdateCatalog();
+      }, 120);
       return;
     }
     if (event.target.id === 'mediaSearch') {
       ui.media.search = event.target.value;
-      renderView(ui.data || {});
+      clearTimeout(_generalSearchDebounceTimer);
+      _generalSearchDebounceTimer = setTimeout(() => renderView(ui.data || {}), 140);
       return;
     }
     if (event.target.id === 'paymentSearch' || event.target.id === 'orderSearch') {
       ui.management.search = event.target.value;
-      renderView(ui.data || {});
+      clearTimeout(_generalSearchDebounceTimer);
+      _generalSearchDebounceTimer = setTimeout(() => renderView(ui.data || {}), 140);
       return;
     }
     if (event.target.id === 'reviewsSearchInput') {
       if (!ui.reviews) ui.reviews = {};
       ui.reviews.search = event.target.value;
-      renderView(ui.data || {});
-      const input = document.getElementById('reviewsSearchInput');
-      if (input) {
-        input.focus();
-        input.setSelectionRange(input.value.length, input.value.length);
-      }
+      clearTimeout(_generalSearchDebounceTimer);
+      _generalSearchDebounceTimer = setTimeout(() => {
+        renderView(ui.data || {});
+        const input = document.getElementById('reviewsSearchInput');
+        if (input) {
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+      }, 140);
       return;
     }
     if (event.target.id === 'usersSearchInput') {
       ui.usersSearch = event.target.value;
-      renderView(ui.data || {});
-      const input = document.getElementById('usersSearchInput');
-      if (input) {
-        input.focus();
-        input.setSelectionRange(input.value.length, input.value.length);
-      }
+      clearTimeout(_generalSearchDebounceTimer);
+      _generalSearchDebounceTimer = setTimeout(() => {
+        renderView(ui.data || {});
+        const input = document.getElementById('usersSearchInput');
+        if (input) {
+          input.focus();
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+      }, 140);
       return;
     }
     if (event.target.id === 'pmLogoInput') {

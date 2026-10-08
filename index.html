@@ -45,11 +45,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   </noscript>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css?v=20261007_v6" />
-  <link rel="stylesheet" href="linkadda-store.css?v=20261007_v6" />
-  <link rel="stylesheet" href="auth-modal.css?v=20261007_v6" />
-  <link rel="stylesheet" href="mobile-app.css?v=20261007_v6" />
-  <script src="preload.js?v=20261007_v6" charset="UTF-8"></script>
+  <link rel="stylesheet" href="style.css?v=20261009_perf1" />
+  <link rel="stylesheet" href="linkadda-store.css?v=20261009_perf1" />
+  <link rel="stylesheet" href="auth-modal.css?v=20261009_perf1" />
+  <link rel="stylesheet" href="mobile-app.css?v=20261009_perf1" />
+  <script src="preload.js?v=20261009_perf1" charset="UTF-8"></script>
   <style id="critical-hero-toast-fix">
     /* Hero Title: White top line, neon glowing gradient for second line */
     .hero-title,
@@ -2046,10 +2046,11 @@
       let hash = 0;
       for (let i = 0; i < seed.length; i++) hash = (hash << 5) - hash + seed.charCodeAt(i);
       const photoNum = (Math.abs(hash) % 52) + 1;
-      img.src = `images/photo_${photoNum}_2026-06-15_18-29-58.jpg`;
+      const photoSuffix = photoNum < 10 ? '18-29-57' : '18-29-58';
+      img.src = `images/photo_${photoNum}_2026-06-15_${photoSuffix}.jpg`;
     } else if (!img._failedSvg) {
       img._failedSvg = true;
-      img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3Ccircle cx='240' cy='120' r='32' fill='%23ff2a8d' opacity='0.25'/%3E%3Cpolygon points='234,106 254,120 234,134' fill='%23ff2a8d'/%3E%3Ctext x='50%25' y='180' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='700' text-anchor='middle'%3ELINKADDA VIP%3C/text%3E%3C/svg%3E";
+      img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3Ccircle cx='200' cy='160' r='36' fill='%23ff2a8d' opacity='0.25'/%3E%3Cpolygon points='194,146 214,160 194,174' fill='%23ff2a8d'/%3E%3Ctext x='50%25' y='230' fill='%23ffffff' font-family='sans-serif' font-size='14' font-weight='700' text-anchor='middle'%3ELINKADDA VIP%3C/text%3E%3C/svg%3E";
     }
   };
 
@@ -3088,18 +3089,25 @@
 
     const badgeIconClass = (cat.badgeIcon || '').trim() || 'fa-sparkles';
     const badgeIconHtml = `<i class="fa-solid ${esc(badgeIconClass)}" ${badgeIconStyle}></i>`;
-    const badgeHtml = customBadge ? `<div class="fk-card-badges-row"><span class="fk-card-badge-vip${badgeColorClass}" ${badgeInlineStyle}>${badgeIconHtml} ${esc(customBadge)}</span></div>` : '';
+    const hasVideo = Boolean((cat.video && String(cat.video).trim()) || (cat.videos && cat.videos.length) || (media.videos && media.videos.length));
+    const videoPillHtml = hasVideo ? `<span class="fk-card-badge-hdr"><i class="fa-solid fa-play" style="color:#f43f5e;font-size:8px;"></i> 4K Video</span>` : '';
+    const badgeHtml = (customBadge || hasVideo) ? `<div class="fk-card-badges-row">${customBadge ? `<span class="fk-card-badge-vip${badgeColorClass}" ${badgeInlineStyle}>${badgeIconHtml} ${esc(customBadge)}</span>` : ''}${videoPillHtml}</div>` : '';
 
     function makeCardImgHtml(imgUrl, title, isEager = false, isSecondary = false) {
-      if (!imgUrl) return '<div class="fk-card-no-img"><i class="fa-solid fa-gem"></i> VIP Pack</div>';
+      if (!imgUrl) {
+        if (hasVideo) {
+          return '<div class="fk-card-no-img" style="background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);"><i class="fa-solid fa-circle-play" style="color:#f43f5e;font-size:36px;margin-bottom:8px;"></i> 4K Video Preview</div>';
+        }
+        return '<div class="fk-card-no-img"><i class="fa-solid fa-gem"></i> VIP Pack</div>';
+      }
       const cleanUrl = esc(imgUrl);
       const fn = String(imgUrl || '').split('/').pop().split('?')[0];
       const localFallback = `images/${fn}`;
-      const placeholderSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3C/svg%3E";
+      const placeholderSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='100%25' height='100%25' fill='%2313121f'/%3E%3C/svg%3E";
       if (isSecondary) {
-        return `<img src="${placeholderSvg}" data-src="${cleanUrl}" alt="${esc(title)}" loading="lazy" decoding="async" fetchpriority="low" draggable="false" class="fk-card-img fk-card-img-lazy" data-fallback="${esc(localFallback)}" onload="this.classList.add('is-loaded'); this.closest('.fk-card')?.classList.add('is-seen');" onerror="window.handleCardImgError(this);" />`;
+        return `<img src="${placeholderSvg}" data-src="${cleanUrl}" alt="${esc(title)}" loading="lazy" decoding="async" fetchpriority="low" draggable="false" class="fk-card-img fk-card-img-lazy" data-fallback="${esc(localFallback)}" onload="this.classList.add('is-loaded'); var m=this.closest('.fk-card-media'); if(m) m.classList.add('is-media-loaded');" onerror="window.handleCardImgError(this);" />`;
       }
-      return `<img src="${cleanUrl}" alt="${esc(title)}" loading="${isEager ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${isEager ? 'high' : 'low'}" draggable="false" class="fk-card-img" data-fallback="${esc(localFallback)}" onload="this.classList.add('is-loaded'); this.closest('.fk-card')?.classList.add('is-seen');" onerror="window.handleCardImgError(this);" />`;
+      return `<img src="${cleanUrl}" alt="${esc(title)}" loading="${isEager ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${isEager ? 'high' : 'low'}" draggable="false" class="fk-card-img" data-fallback="${esc(localFallback)}" onload="this.classList.add('is-loaded'); var m=this.closest('.fk-card-media'); if(m) m.classList.add('is-media-loaded');" onerror="window.handleCardImgError(this);" />`;
     }
 
     return `<div class="fk-card" data-fb-id="${esc(id)}" data-slug="${esc(cat.slug||'')}" data-product-id="${esc(id)}" id="product-${esc(id)}">
@@ -3114,7 +3122,7 @@
         <div class="fk-card-slides-track">
           ${images.map((imgUrl, idx) => `
             <div class="fk-card-slide${idx === 0 ? ' is-active' : ''}" data-idx="${idx}">
-              ${makeCardImgHtml(imgUrl, baseTitle, (cardIndex < 4 && idx === 0), idx > 0)}
+              ${makeCardImgHtml(imgUrl, baseTitle, (cardIndex < 8 && idx === 0), idx > 0)}
             </div>
           `).join('')}
         </div>
@@ -3130,7 +3138,7 @@
       </div>
       ` : `
       <div class="fk-card-media" onclick="window.openFkProductPage('${esc(id)}')">
-        ${makeCardImgHtml(firstImg, baseTitle, cardIndex < 4)}
+        ${makeCardImgHtml(firstImg, baseTitle, cardIndex < 8)}
         <div class="fk-card-media-gradient"></div>
         <div class="fk-card-quick-view-overlay"><i class="fa-solid fa-expand"></i> Quick View</div>
       </div>
@@ -3193,33 +3201,33 @@
     container.style.zIndex = '99999';
     document.body.appendChild(container);
 
-    const colors = ['#f0247a', '#7c3aed', '#f59e0b', '#10b981', '#3b82f6', '#ec4899'];
-    const particleCount = 20;
+    const colors = ['#ff2a8d', '#8b5cf6', '#f59e0b', '#10b981', '#3b82f6'];
+    const particleCount = 8;
 
     for (let i = 0; i < particleCount; i++) {
       const p = document.createElement('div');
       p.style.position = 'absolute';
       p.style.left = `${x}px`;
       p.style.top = `${y}px`;
-      p.style.width = `${Math.random() * 8 + 6}px`;
+      p.style.width = `${Math.random() * 5 + 4}px`;
       p.style.height = p.style.width;
       p.style.borderRadius = '50%';
       p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      p.style.boxShadow = `0 0 10px ${p.style.backgroundColor}`;
+      p.style.boxShadow = `0 0 6px ${p.style.backgroundColor}`;
       p.style.transform = 'translate(-50%, -50%)';
       container.appendChild(p);
 
       const angle = Math.random() * Math.PI * 2;
-      const velocity = Math.random() * 80 + 40;
+      const velocity = Math.random() * 50 + 25;
       const targetX = Math.cos(angle) * velocity;
-      const targetY = Math.sin(angle) * velocity - (Math.random() * 50);
+      const targetY = Math.sin(angle) * velocity - (Math.random() * 30);
 
       const animation = p.animate([
         { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
         { transform: `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px)) scale(0)`, opacity: 0 }
       ], {
-        duration: Math.random() * 400 + 600,
-        easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)',
+        duration: Math.random() * 250 + 400,
+        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
         fill: 'forwards'
       });
 
@@ -3228,16 +3236,17 @@
 
     setTimeout(() => {
       container.remove();
-    }, 1200);
+    }, 700);
   }
 
-  // Global click handler for interactive button animations
+  // Global click handler for interactive button animations (optimized)
   document.addEventListener('click', (e) => {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const isInteractive = e.target.closest('.btn-card, .btn-card-action, .btn-primary, .category-pill, .vid-tier-item, .pricing-banner .btn-primary');
     if (isInteractive) {
       createParticleBurst(e);
     }
-  });
+  }, { passive: true });
 
   let activeCategoryFilter = 'all';
 
@@ -3435,6 +3444,12 @@
       renderCategoryFilters();
       renderLiveGrid();
       renderPinnedBanner();
+      if (typeof window.openFkProductPage === 'function' && window.__fkActiveProduct && document.getElementById('fkProductPageOverlay')?.classList.contains('active')) {
+        const activeId = window.__fkActiveProduct.id || window.__fkActiveProduct.slug;
+        if (activeId && liveCollections.products && (liveCollections.products[activeId] || Object.values(liveCollections.products).some(p => String(p?.id) === String(activeId)))) {
+          window.openFkProductPage(activeId);
+        }
+      }
     });
   }
 
@@ -3583,26 +3598,11 @@
       activeCardSlideshowObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           const mediaEl = entry.target;
-          if (entry.isIntersecting) {
-            mediaEl.closest('.fk-card')?.classList.add('is-seen');
-          } else {
+          if (!entry.isIntersecting) {
             stopCardTimer(mediaEl);
           }
         });
-      }, { rootMargin: '250px 0px 250px 0px', threshold: 0 });
-    }
-
-    if ('IntersectionObserver' in window) {
-      if (!window._cardSeenObserver) {
-        window._cardSeenObserver = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('is-seen');
-            }
-          });
-        }, { rootMargin: '300px 0px 300px 0px', threshold: 0 });
-      }
-      document.querySelectorAll('.fk-card, .pcard').forEach(card => window._cardSeenObserver.observe(card));
+      }, { rootMargin: '200px 0px 200px 0px', threshold: 0 });
     }
 
     cardSlideshows.forEach((mediaEl, index) => {
@@ -3977,7 +3977,7 @@
           }
         }
       } else {
-        grid.innerHTML = records.map((item, idx) => {
+        const nextHtml = records.map((item, idx) => {
           try {
             return buildCard(item.id, item, idx);
           } catch (e) {
@@ -3985,6 +3985,13 @@
             return '';
           }
         }).join('');
+
+        if (grid._lastRenderedHtml === nextHtml && grid.children.length === records.length) {
+          return;
+        }
+
+        grid._lastRenderedHtml = nextHtml;
+        grid.innerHTML = nextHtml;
       }
 
       initSlideshows();
@@ -4044,12 +4051,18 @@
             const freshProd = localData.products[id];
             const preloadProd = liveCollections.products[id];
             liveCollections.products[id] = Object.assign({}, preloadProd, freshProd);
-            // Ensure unique, validated local image from preload is preserved over broken remote URLs
-            if (!freshProd.image || freshProd.image.startsWith('http')) {
+            // Preserve fresh product images from admin; fallback to preload only if image is not provided
+            if (!freshProd.image) {
               liveCollections.products[id].image = preloadProd.image;
               liveCollections.products[id].thumbnail = preloadProd.thumbnail || preloadProd.image;
-              if (preloadProd.images && preloadProd.images.length) {
-                liveCollections.products[id].images = [preloadProd.image, ...(freshProd.images || []).filter(u => u !== preloadProd.image)];
+              if (preloadProd.images && preloadProd.images.length && (!freshProd.images || !freshProd.images.length)) {
+                liveCollections.products[id].images = preloadProd.images;
+              }
+            } else {
+              liveCollections.products[id].image = freshProd.image;
+              liveCollections.products[id].thumbnail = freshProd.thumbnail || freshProd.image;
+              if (freshProd.images && freshProd.images.length) {
+                liveCollections.products[id].images = freshProd.images;
               }
             }
           } else {
@@ -6164,7 +6177,7 @@
   </div>
 
   <script type="module" src="media-resolver.js"></script>
-  <script src="live-ticker.js?v=20260919b"></script>
+  <script src="live-ticker.js?v=20261009_slow1"></script>
   <script src="linkadda-store.js?v=13"></script>
   <script type="module" src="auth-modal.js?v=20260916m"></script>
 </body>

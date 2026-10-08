@@ -82,6 +82,19 @@ function loadCachedStore() {
     }
   } catch (_) {}
 
+  // 5. Clean up any corrupt slash keys (e.g. from previous batch updates)
+  try {
+    ['products', 'categories'].forEach((k) => {
+      if (initial[k] && typeof initial[k] === 'object') {
+        Object.keys(initial[k]).forEach((subKey) => {
+          if (subKey.includes('/')) {
+            delete initial[k][subKey];
+          }
+        });
+      }
+    });
+  } catch (_) {}
+
   return initial;
 }
 
@@ -100,6 +113,7 @@ function syncWebsiteCache() {
       timestamp: Date.now(),
     };
     localStorage.setItem('linkadda_cached_live_data', JSON.stringify(liveCache));
+    localStorage.setItem('linkadda_cached_live_data_v4', JSON.stringify(liveCache));
     if (STORE.payment) {
       localStorage.setItem('linkadda_payment_payment', JSON.stringify(STORE.payment));
     }
@@ -327,13 +341,21 @@ export async function updateRecord(node, id, data) {
     await set(nodeRef(node), next);
     return next;
   }
-  const current = STORE[node]?.[id] || {};
-  const next = { ...current, ...data, id, updatedAt: Date.now() };
+  let targetId = id;
+  if (STORE[node] && !STORE[node][targetId]) {
+    const foundKey = Object.keys(STORE[node]).find((k) => {
+      const item = STORE[node][k];
+      return item && (String(item.id) === String(id) || String(item.slug) === String(id));
+    });
+    if (foundKey) targetId = foundKey;
+  }
+  const current = STORE[node]?.[targetId] || {};
+  const next = { ...current, ...data, id: current.id || targetId, updatedAt: Date.now() };
   if (!STORE[node]) STORE[node] = {};
-  STORE[node][id] = next;
+  STORE[node][targetId] = next;
   emit();
   syncWebsiteCache();
-  await update(nodeRef(node, id), { ...data, updatedAt: Date.now() });
+  await update(nodeRef(node, targetId), { ...data, updatedAt: Date.now() });
   return next;
 }
 
@@ -341,8 +363,27 @@ export async function updateRecordsBatch(node, batchMap) {
   const nodeName = RTDB_NODES[node];
   if (!nodeName) throw new Error(`Unknown node: ${node}`);
   if (!STORE[node]) STORE[node] = {};
-  for (const [id, item] of Object.entries(batchMap)) {
-    STORE[node][id] = { ...(STORE[node][id] || {}), ...(item || {}) };
+
+  // Clean up any existing corrupted slash-keys in STORE
+  for (const k of Object.keys(STORE[node])) {
+    if (k.includes('/')) {
+      delete STORE[node][k];
+    }
+  }
+
+  // Properly apply batch updates in memory (handling multi-path slash keys e.g. "prodId/displayOrder")
+  for (const [key, value] of Object.entries(batchMap || {})) {
+    if (key.includes('/')) {
+      const slashIndex = key.indexOf('/');
+      const recordId = key.slice(0, slashIndex);
+      const field = key.slice(slashIndex + 1);
+      if (!STORE[node][recordId]) {
+        STORE[node][recordId] = { id: recordId };
+      }
+      STORE[node][recordId][field] = value;
+    } else {
+      STORE[node][key] = { ...(STORE[node][key] || {}), ...(value || {}) };
+    }
   }
   emit();
   syncWebsiteCache();
@@ -357,12 +398,37 @@ export async function deleteRecord(node, id) {
     await set(nodeRef(node), null);
     return;
   }
-  if (STORE[node] && STORE[node][id]) {
-    delete STORE[node][id];
+  if (!id) {
+    console.warn(`deleteRecord called on ${node} without valid id`);
+    return;
+  }
+
+  let targetKey = id;
+  if (STORE[node]) {
+    if (STORE[node][id]) {
+      delete STORE[node][id];
+    } else {
+      // Find matching key if id was an alternate identifier (e.g. orderId or slug)
+      for (const k of Object.keys(STORE[node])) {
+        const item = STORE[node][k];
+        if (item && (String(item.id) === String(id) || String(item.orderId) === String(id) || String(item.slug) === String(id))) {
+          delete STORE[node][k];
+          targetKey = k;
+          break;
+        }
+      }
+    }
     emit();
     syncWebsiteCache();
   }
-  await remove(nodeRef(node, id));
+
+  if (targetKey) {
+    try {
+      await remove(nodeRef(node, targetKey));
+    } catch (err) {
+      console.warn(`Failed to delete ${node}/${targetKey} from RTDB:`, err?.message || err);
+    }
+  }
 }
 
 export async function duplicateRecord(node, id) {
@@ -388,7 +454,18 @@ export function listCollection(node) {
 }
 
 export function getItem(node, id) {
-  return STORE[node]?.[id] || null;
+  if (!STORE[node] || !id) return null;
+  if (STORE[node][id]) {
+    const val = STORE[node][id];
+    return typeof val === 'object' && val !== null ? { ...val, id: val.id || id } : val;
+  }
+  // Fallback search by id, orderId, or slug
+  for (const [key, val] of Object.entries(STORE[node])) {
+    if (val && typeof val === 'object' && (String(val.id) === String(id) || String(val.orderId) === String(id) || String(val.slug) === String(id))) {
+      return { ...val, id: val.id || key };
+    }
+  }
+  return null;
 }
 
 export function stats() {
