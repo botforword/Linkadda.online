@@ -2837,6 +2837,7 @@ function openSingleEditor(node, schema, record = {}) {
 function getRangeDays(range = ui.dashboardRange) {
   if (range === 'week') return 7;
   if (range === 'month') return 30;
+  if (range === 'all') return 3650;
   return 1;
 }
 
@@ -2856,6 +2857,7 @@ function recordTimestamp(item) {
 }
 
 function isInRange(timestamp, range) {
+  if (range === 'all') return true;
   const days = getRangeDays(range);
   const stamp = typeof timestamp === 'object' ? recordTimestamp(timestamp) : (Number(timestamp) || recordTimestamp({ date: timestamp }));
   return stamp >= Date.now() - (days * 86400000);
@@ -2870,6 +2872,13 @@ function parseMetricNumber(value) {
 }
 
 function getRangeWindow(range, offset = 0) {
+  if (range === 'all') {
+    if (offset > 0) return { start: 0, end: 0 };
+    return {
+      start: 0,
+      end: Date.now() + 86400000,
+    };
+  }
   const days = getRangeDays(range);
   const end = Date.now() - (offset * days * 86400000);
   return {
@@ -2901,15 +2910,16 @@ function dayKey(timestamp) {
 }
 
 function buildSeries(items, range, predicate = () => true) {
-  const { start, end } = getRangeWindow(range);
-  const bucketSize = range === 'day' ? 3600000 : 86400000;
-  const bucketCount = range === 'day' ? 24 : getRangeDays(range);
+  const chartRange = range === 'all' ? 'month' : range;
+  const { start, end } = getRangeWindow(chartRange);
+  const bucketSize = chartRange === 'day' ? 3600000 : 86400000;
+  const bucketCount = chartRange === 'day' ? 24 : getRangeDays(chartRange);
   const series = [];
   for (let index = 0; index < bucketCount; index += 1) {
     const stamp = start + (index * bucketSize);
     const date = new Date(stamp);
     series.push({
-      label: range === 'day'
+      label: chartRange === 'day'
         ? `${String(date.getHours()).padStart(2, '0')}:00`
         : `${date.getMonth() + 1}/${date.getDate()}`,
       date: dayKey(stamp),
@@ -2928,15 +2938,16 @@ function buildSeries(items, range, predicate = () => true) {
 }
 
 function buildValueSeries(items, range, valueFn = () => 0, predicate = () => true) {
-  const { start, end } = getRangeWindow(range);
-  const bucketSize = range === 'day' ? 3600000 : 86400000;
-  const bucketCount = range === 'day' ? 24 : getRangeDays(range);
+  const chartRange = range === 'all' ? 'month' : range;
+  const { start, end } = getRangeWindow(chartRange);
+  const bucketSize = chartRange === 'day' ? 3600000 : 86400000;
+  const bucketCount = chartRange === 'day' ? 24 : getRangeDays(chartRange);
   const series = [];
   for (let index = 0; index < bucketCount; index += 1) {
     const stamp = start + (index * bucketSize);
     const date = new Date(stamp);
     series.push({
-      label: range === 'day'
+      label: chartRange === 'day'
         ? `${String(date.getHours()).padStart(2, '0')}:00`
         : `${date.getMonth() + 1}/${date.getDate()}`,
       date: dayKey(stamp),
@@ -3021,6 +3032,7 @@ function renderRangeSwitch() {
         ['day', '24H'],
         ['week', '7D'],
         ['month', '30D'],
+        ['all', 'ALL'],
       ].map(([range, label]) => `
         <button class="range-pill ${ui.dashboardRange === range ? 'active' : ''}" data-action="set-range" data-range="${range}">
           ${escapeHtml(label)}
@@ -3665,7 +3677,22 @@ function resolveMediaSource(value) {
   return `${SUPABASE_CDN_ROOT}/products/${raw.replace(/^\/+/, '')}`;
 }
 
-function mediaPreview(item) {
+function buildCategoryLookupMap() {
+  const map = new Map();
+  const cats = ui.data?.categories || getSnapshot().categories || {};
+  for (const [id, c] of Object.entries(cats)) {
+    if (!c || typeof c !== 'object') continue;
+    const keyId = String(c.id || id || '').trim().toLowerCase();
+    const keySlug = String(c.slug || '').trim().toLowerCase();
+    const keyTitle = String(c.title || '').trim().toLowerCase();
+    if (keyId) map.set(keyId, c);
+    if (keySlug) map.set(keySlug, c);
+    if (keyTitle) map.set(keyTitle, c);
+  }
+  return map;
+}
+
+function mediaPreview(item, categoryMap = null, isEager = false) {
   let rawSrc = item.image
     || item.imageUrl
     || item.thumbnail
@@ -3683,13 +3710,9 @@ function mediaPreview(item) {
     || '';
 
   if (!rawSrc && item.category) {
-    const categories = listCollection('categories');
+    const map = categoryMap || buildCategoryLookupMap();
     const catKey = String(item.category).trim().toLowerCase();
-    const matched = categories.find(c => 
-      String(c.id || '').toLowerCase() === catKey || 
-      String(c.slug || '').toLowerCase() === catKey || 
-      String(c.title || '').toLowerCase() === catKey
-    );
+    const matched = map.get(catKey);
     if (matched) {
       rawSrc = matched.image || (Array.isArray(matched.images) ? matched.images[0] : '');
     }
@@ -3703,7 +3726,7 @@ function mediaPreview(item) {
   const fn = src.split('/').pop().split('?')[0];
   const isFile = typeof window !== 'undefined' && window.location.protocol === 'file:';
   const localFallback = isFile ? `../images/${fn}` : `/images/${fn}`;
-  return `<img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.title || item.name || 'Preview')}" loading="lazy" decoding="async" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}else if(!this._failed){this._failed=true; this.src='/favicon.svg';}" />`;
+  return `<img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.title || item.name || 'Preview')}" loading="${loadAttr}" decoding="async" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}else if(!this._failed){this._failed=true; this.src='/favicon.svg';}" />`;
 }
 
 function renderDataPill(label, value) {
@@ -3841,8 +3864,8 @@ function toggleSelection(id) {
   else ui.selection.add(id);
 }
 
-function itemPreviewThumb(item) {
-  return mediaPreview(item) || '<div class="preview-fallback">No image</div>';
+function itemPreviewThumb(item, categoryMap = null, isEager = false) {
+  return mediaPreview(item, categoryMap, isEager) || '<div class="preview-fallback">No image</div>';
 }
 
 function extractMediaUrls(val) {
@@ -3854,7 +3877,7 @@ function extractMediaUrls(val) {
   return [];
 }
 
-function itemMediaCounts(item = {}) {
+function itemMediaCounts(item = {}, categoryMap = null) {
   if (!item) return { images: 0, videos: 0, total: 0 };
   const imagesSet = new Set();
   const videosSet = new Set();
@@ -3896,13 +3919,9 @@ function itemMediaCounts(item = {}) {
 
   // If no explicit image found, check category fallback
   if (imagesSet.size === 0 && item.category) {
-    const categories = listCollection('categories');
+    const map = categoryMap || buildCategoryLookupMap();
     const catKey = String(item.category).trim().toLowerCase();
-    const matched = categories.find(c => 
-      String(c.id || '').toLowerCase() === catKey || 
-      String(c.slug || '').toLowerCase() === catKey || 
-      String(c.title || '').toLowerCase() === catKey
-    );
+    const matched = map.get(catKey);
     if (matched) {
       addMediaUrl(matched.image);
       addMediaUrl(matched.images);
@@ -3916,16 +3935,16 @@ function itemMediaCounts(item = {}) {
   };
 }
 
-function itemMediaCountLabel(item) {
-  const counts = itemMediaCounts(item);
+function itemMediaCountLabel(item, precomputedCounts = null) {
+  const counts = precomputedCounts || itemMediaCounts(item);
   if (counts.videos > 0) {
     return `${counts.images} Img${counts.images === 1 ? '' : 's'} • ${counts.videos} Vid${counts.videos === 1 ? '' : 's'}`;
   }
   return `${counts.images} image${counts.images === 1 ? '' : 's'}`;
 }
 
-function itemMediaCountBadgeHtml(item) {
-  const counts = itemMediaCounts(item);
+function itemMediaCountBadgeHtml(item, precomputedCounts = null) {
+  const counts = precomputedCounts || itemMediaCounts(item);
   if (counts.videos > 0) {
     return `<span class="catalog-media-badge-enhanced"><span class="img-num"><i data-lucide="image" style="width:12px;height:12px;"></i> ${counts.images}</span> • <span class="vid-num"><i data-lucide="video" style="width:12px;height:12px;"></i> ${counts.videos}</span></span>`;
   }
@@ -4010,7 +4029,7 @@ function openCategoryProducts(item) {
   renderView(ui.data || {});
 }
 
-function renderCatalogProductCard(item, node) {
+function renderCatalogProductCard(item, node, categoryMap = null, cardIndex = 0) {
   const active = isSelected(item.id);
   const features = normalizeFeatureList(item.features);
   const tiers = normalizeTierList(item.tiers);
@@ -4021,12 +4040,17 @@ function renderCatalogProductCard(item, node) {
   const tierBadge = tierCount > 0 
     ? `<button type="button" class="catalog-tier-badge-btn" data-action="edit-tiers" data-node="${node}" data-id="${escapeHtml(item.id)}" title="Click to manage ${tierCount} sub-plans"><i data-lucide="layers"></i> ${tierCount} Sub-Plans</button>` 
     : '';
+
+  // Pre-calculate media counts ONCE for this product card (O(1) with cached category map)
+  const mediaCounts = itemMediaCounts(item, categoryMap);
+  const mediaBadgeHtml = itemMediaCountBadgeHtml(item, mediaCounts);
+
   const badges = [
     posBadge,
     tierBadge,
     item.category ? `<span class="chip">${escapeHtml(item.category)}</span>` : '',
     catalogCardBadge(item.status),
-    itemMediaCountBadgeHtml(item),
+    mediaBadgeHtml,
   ].filter(Boolean).join('');
 
   const cleanPriceINR = (val) => {
@@ -4044,7 +4068,7 @@ function renderCatalogProductCard(item, node) {
     { label: 'INR', value: cleanPriceINR(item.priceINR) },
     { label: 'USD', value: cleanPriceUSD(item.priceUSD) },
     { label: 'Sub-Plans', value: tierCount > 0 ? `${tierCount} options` : '—' },
-    { label: 'Media', value: itemMediaCountLabel(item) },
+    { label: 'Media', value: itemMediaCountLabel(item, mediaCounts) },
   ];
   if (item.orderCount || item.orders) {
     metricsList.push({ label: 'Orders', value: itemOrderCountLabel(item) });
@@ -4057,14 +4081,16 @@ function renderCatalogProductCard(item, node) {
     </div>
   `).join('');
 
+  const isEager = cardIndex < 4;
+
   return `
     <article class="catalog-card catalog-card-product ${active ? 'selected' : ''}" data-id="${escapeHtml(item.id)}" draggable="true">
       <label class="catalog-select">
         <input type="checkbox" data-action="toggle-select-item" data-id="${escapeHtml(item.id)}" ${active ? 'checked' : ''} />
       </label>
       <div class="catalog-card-media">
-        <button class="catalog-media-frame catalog-media-button" type="button" data-action="preview" data-node="${node}" data-id="${escapeHtml(item.id)}">${itemPreviewThumb(item)}</button>
-        <span class="catalog-image-badge">${itemMediaCountBadgeHtml(item)}</span>
+        <button class="catalog-media-frame catalog-media-button" type="button" data-action="preview" data-node="${node}" data-id="${escapeHtml(item.id)}">${itemPreviewThumb(item, categoryMap, isEager)}</button>
+        <span class="catalog-image-badge">${mediaBadgeHtml}</span>
       </div>
       <div class="catalog-card-content catalog-card-tapzone" data-action="preview" data-node="${node}" data-id="${escapeHtml(item.id)}">
         <div class="catalog-card-head">
@@ -4095,7 +4121,7 @@ function renderCatalogProductCard(item, node) {
   `;
 }
 
-function renderCatalogCategoryCard(item, node) {
+function renderCatalogCategoryCard(item, node, categoryMap = null, cardIndex = 0) {
   const active = isSelected(item.id);
   const productCount = countProductsForCategory(item);
   const toggleAction = String(item.status || 'active') === 'hidden' ? 'Show' : 'Hide';
@@ -4119,13 +4145,15 @@ function renderCatalogCategoryCard(item, node) {
     </div>
   `).join('');
 
+  const isEager = cardIndex < 4;
+
   return `
     <article class="catalog-card catalog-card-category ${active ? 'selected' : ''}" data-id="${escapeHtml(item.id)}" draggable="true">
       <label class="catalog-select">
         <input type="checkbox" data-action="toggle-select-item" data-id="${escapeHtml(item.id)}" ${active ? 'checked' : ''} />
       </label>
       <div class="catalog-card-media compact category-card-media">
-        <button class="catalog-media-frame catalog-media-button" type="button" data-action="preview" data-node="${node}" data-id="${escapeHtml(item.id)}">${itemPreviewThumb(item)}</button>
+        <button class="catalog-media-frame catalog-media-button" type="button" data-action="preview" data-node="${node}" data-id="${escapeHtml(item.id)}">${itemPreviewThumb(item, categoryMap, isEager)}</button>
         <span class="catalog-image-badge">Category</span>
       </div>
       <div class="catalog-card-content catalog-card-tapzone" data-action="preview" data-node="${node}" data-id="${escapeHtml(item.id)}">
@@ -4489,9 +4517,12 @@ function renderCollectionInner(node, schema, data) {
     contentHtml = `
       ${buildCatalogFilters(node, items)}
       <div class="catalog-results ${ui.catalogView}" id="catalogResultsGrid">
-        ${paged.length ? paged.map((item) => (node === 'categories'
-          ? renderCatalogCategoryCard(item, node)
-          : renderCatalogProductCard(item, node))).join('') : `
+        ${paged.length ? (() => {
+          const catMap = buildCategoryLookupMap();
+          return paged.map((item, idx) => (node === 'categories'
+            ? renderCatalogCategoryCard(item, node, catMap, idx)
+            : renderCatalogProductCard(item, node, catMap, idx))).join('');
+        })() : `
           <div class="catalog-empty glass">
             <div class="catalog-empty-art">
               <div class="orb orb-a"></div>
@@ -4590,8 +4621,8 @@ function renderDashboard(data) {
             ${renderKpiCard({
               label: 'Visitors',
               value: formatNumber(summary.visitors),
-              change: summary.visitorsTrend,
-              note: `vs previous ${summary.range}`,
+              change: summary.range === 'all' ? null : summary.visitorsTrend,
+              note: summary.range === 'all' ? 'All-time unique visitors' : (summary.visitors === 0 && summary.totals.visitors > 0 ? `0 in 24h · ${formatNumber(summary.totals.visitors)} all-time` : `vs previous ${summary.range}`),
               icon: 'users',
               series: summary.visitorSeries,
               tone: 'primary',
@@ -4599,8 +4630,8 @@ function renderDashboard(data) {
             ${renderKpiCard({
               label: 'Order Clicks',
               value: formatNumber(summary.clicks),
-              change: summary.clicksTrend,
-              note: `vs previous ${summary.range}`,
+              change: summary.range === 'all' ? null : summary.clicksTrend,
+              note: summary.range === 'all' ? 'All-time store clicks' : (summary.clicks === 0 && summary.totals.clicks > 0 ? `0 in 24h · ${formatNumber(summary.totals.clicks)} all-time` : `vs previous ${summary.range}`),
               icon: 'mouse-pointer-click',
               series: summary.clickSeries,
               tone: 'secondary',
@@ -4608,8 +4639,8 @@ function renderDashboard(data) {
             ${renderKpiCard({
               label: 'Orders',
               value: formatNumber(summary.orders),
-              change: summary.ordersTrend,
-              note: `vs previous ${summary.range}`,
+              change: summary.range === 'all' ? null : summary.ordersTrend,
+              note: summary.range === 'all' ? 'All-time customer orders' : (summary.orders === 0 && summary.totals.orders > 0 ? `0 in 24h · ${formatNumber(summary.totals.orders)} all-time` : `vs previous ${summary.range}`),
               icon: 'receipt-text',
               series: summary.orderSeries,
               tone: 'success',
@@ -4617,8 +4648,8 @@ function renderDashboard(data) {
             ${renderKpiCard({
               label: 'Revenue',
               value: formatNumber(summary.revenue),
-              change: summary.revenueTrend,
-              note: 'From paid / completed orders',
+              change: summary.range === 'all' ? null : summary.revenueTrend,
+              note: summary.range === 'all' ? 'All-time store revenue' : 'From paid / completed orders',
               icon: 'banknote',
               series: summary.revenueSeries,
               tone: 'accent',
@@ -8984,9 +9015,10 @@ function softUpdateCatalog() {
 
     if (paged.length) {
       resultsEl.className = `catalog-results ${ui.catalogView}`;
-      resultsEl.innerHTML = paged.map((item) => (node === 'categories'
-        ? renderCatalogCategoryCard(item, node)
-        : renderCatalogProductCard(item, node))).join('');
+      const catMap = buildCategoryLookupMap();
+      resultsEl.innerHTML = paged.map((item, idx) => (node === 'categories'
+        ? renderCatalogCategoryCard(item, node, catMap, idx)
+        : renderCatalogProductCard(item, node, catMap, idx))).join('');
     } else {
       resultsEl.className = `catalog-results ${ui.catalogView}`;
       resultsEl.innerHTML = `
@@ -9081,7 +9113,7 @@ function initRouteHandling() {
   const updateRoute = () => {
     const path = window.location.hash.replace(/^#\/?/, '') || 'dashboard';
     applyRoute(path);
-    if (!isMobileViewport()) closeSidebar();
+    closeSidebar();
   };
   window.addEventListener('hashchange', updateRoute);
   window.addEventListener('resize', () => {
@@ -9212,7 +9244,7 @@ function attachGlobalHandlers() {
       } else {
         applyRoute(route);
       }
-      if (isMobileViewport()) closeSidebar();
+      closeSidebar();
       return;
     }
     const actionBtn = event.target.closest('[data-action]');
@@ -11267,18 +11299,26 @@ initRouteHandling();
 ui.data = getSnapshot();
 renderView(ui.data || {});
 
+let renderDebounceTimer = null;
+function debouncedRenderView(data) {
+  if (renderDebounceTimer) cancelAnimationFrame(renderDebounceTimer);
+  renderDebounceTimer = requestAnimationFrame(() => {
+    renderDebounceTimer = null;
+    renderView(data);
+  });
+}
+
 // Subscribe to state updates for seamless live sync
 subscribe((data) => {
   ui.data = data;
-  invalidateUnifiedMediaCache();
-  renderView(data);
+  debouncedRenderView(data);
   syncRealApprovedOrdersToSettings(data);
 });
 
 // Protect route verifies auth and activates authenticated realtime sync
 protectRoute((user) => {
   syncTopbar(user);
-  startRealtime();
+  startRealtime(true);
 });
 
 

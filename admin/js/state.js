@@ -156,17 +156,36 @@ function saveStoreCache() {
 }
 
 function emit() {
-  if (emitTimer) cancelAnimationFrame(emitTimer);
-  emitTimer = requestAnimationFrame(() => {
-    saveStoreCache();
-    const snapshot = getSnapshot();
-    subscribers.forEach((fn) => {
-      try {
-        fn(snapshot);
-      } catch (err) {
-        console.error('Subscriber error:', err);
-      }
+  if (emitTimer) clearTimeout(emitTimer);
+  emitTimer = setTimeout(() => {
+    emitTimer = null;
+    requestAnimationFrame(() => {
+      saveStoreCache();
+      const snapshot = getSnapshot();
+      subscribers.forEach((fn) => {
+        try {
+          fn(snapshot);
+        } catch (err) {
+          console.error('Subscriber error:', err);
+        }
+      });
     });
+  }, 35);
+}
+
+export function emitImmediate() {
+  if (emitTimer) {
+    clearTimeout(emitTimer);
+    emitTimer = null;
+  }
+  saveStoreCache();
+  const snapshot = getSnapshot();
+  subscribers.forEach((fn) => {
+    try {
+      fn(snapshot);
+    } catch (err) {
+      console.error('Subscriber error:', err);
+    }
   });
 }
 
@@ -297,14 +316,14 @@ export async function saveRecord(node, id, data) {
   if (!payload.createdAt) payload.createdAt = Date.now();
   if (isSingleton(node)) {
     STORE[node] = payload;
-    emit();
+    emitImmediate();
     syncWebsiteCache();
     await set(nodeRef(node), payload);
     return payload;
   }
   if (!STORE[node]) STORE[node] = {};
   STORE[node][payload.id] = payload;
-  emit();
+  emitImmediate();
   syncWebsiteCache();
   await set(nodeRef(node, payload.id), payload);
   return payload;
@@ -319,14 +338,14 @@ export async function createRecord(node, data) {
   };
   if (isSingleton(node)) {
     STORE[node] = payload;
-    emit();
+    emitImmediate();
     syncWebsiteCache();
     await set(nodeRef(node), payload);
     return payload;
   }
   if (!STORE[node]) STORE[node] = {};
   STORE[node][payload.id] = payload;
-  emit();
+  emitImmediate();
   syncWebsiteCache();
   await set(nodeRef(node, payload.id), payload);
   return payload;
@@ -336,7 +355,7 @@ export async function updateRecord(node, id, data) {
   if (isSingleton(node)) {
     const next = { ...(STORE[node] || {}), ...data, updatedAt: Date.now() };
     STORE[node] = next;
-    emit();
+    emitImmediate();
     syncWebsiteCache();
     await set(nodeRef(node), next);
     return next;
@@ -353,7 +372,7 @@ export async function updateRecord(node, id, data) {
   const next = { ...current, ...data, id: current.id || targetId, updatedAt: Date.now() };
   if (!STORE[node]) STORE[node] = {};
   STORE[node][targetId] = next;
-  emit();
+  emitImmediate();
   syncWebsiteCache();
   await update(nodeRef(node, targetId), { ...data, updatedAt: Date.now() });
   return next;
@@ -385,7 +404,7 @@ export async function updateRecordsBatch(node, batchMap) {
       STORE[node][key] = { ...(STORE[node][key] || {}), ...(value || {}) };
     }
   }
-  emit();
+  emitImmediate();
   syncWebsiteCache();
   await update(ref(db, nodeName), batchMap);
 }
@@ -393,7 +412,7 @@ export async function updateRecordsBatch(node, batchMap) {
 export async function deleteRecord(node, id) {
   if (isSingleton(node)) {
     delete STORE[node];
-    emit();
+    emitImmediate();
     syncWebsiteCache();
     await set(nodeRef(node), null);
     return;
@@ -418,7 +437,7 @@ export async function deleteRecord(node, id) {
         }
       }
     }
-    emit();
+    emitImmediate();
     syncWebsiteCache();
   }
 
@@ -469,20 +488,34 @@ export function getItem(node, id) {
 }
 
 export function stats() {
-  const products = listCollection('products').filter((item) => item.status !== 'deleted').length;
-  const categories = listCollection('categories').filter((item) => item.status !== 'deleted').length;
-  const orders = listCollection('orders');
-  const visitors = listCollection('visitors');
-  const events = listCollection('events');
+  const products = Object.values(STORE.products || {}).filter((item) => item && item.status !== 'deleted').length;
+  const categories = Object.values(STORE.categories || {}).filter((item) => item && item.status !== 'deleted').length;
+  const orders = Object.values(STORE.orders || {}).filter(Boolean);
+  const visitors = Object.values(STORE.visitors || {}).filter(Boolean);
+  const events = Object.values(STORE.events || {}).filter(Boolean);
   const today = new Date().toISOString().slice(0, 10);
   const isOrderClick = (item) => {
+    if (!item) return false;
     const t = String(item.type || '').toLowerCase();
     if (t === 'telegram_click' || t === 'review_submission' || t === 'visitor') return false;
     return t.includes('order') || t.includes('click') || Boolean(item.productId || item.package || item.productName);
   };
-  const todaysOrders = orders.filter((item) => String(item.date || '').slice(0, 10) === today).length;
-  const todaysVisitors = visitors.filter((item) => String(item.date || '').slice(0, 10) === today).length;
-  const todaysClicks = events.filter((item) => String(item.date || '').slice(0, 10) === today && isOrderClick(item)).length;
+
+  const matchesDate = (item, targetDate) => {
+    if (!item) return false;
+    if (item.date && String(item.date).slice(0, 10) === targetDate) return true;
+    const stamp = Number(item.timestamp || item.createdAt || item.updatedAt || 0);
+    if (stamp > 0) {
+      try {
+        if (new Date(stamp).toISOString().slice(0, 10) === targetDate) return true;
+      } catch (_) {}
+    }
+    return false;
+  };
+
+  const todaysOrders = orders.filter((item) => matchesDate(item, today)).length;
+  const todaysVisitors = visitors.filter((item) => matchesDate(item, today)).length;
+  const todaysClicks = events.filter((item) => matchesDate(item, today) && isOrderClick(item)).length;
   return {
     products,
     categories,
@@ -496,14 +529,16 @@ export function stats() {
 }
 
 export function recentOrders(limit = 6) {
-  return listCollection('orders')
-    .sort((a, b) => (Number(b.timestamp || b.createdAt || b.updatedAt || 0)) - (Number(a.timestamp || a.createdAt || a.updatedAt || 0)))
+  return Object.values(STORE.orders || {})
+    .filter(Boolean)
+    .sort((a, b) => Number(b.timestamp || b.createdAt || b.updatedAt || 0) - Number(a.timestamp || a.createdAt || a.updatedAt || 0))
     .slice(0, limit);
 }
 
 export function recentProducts(limit = 6) {
-  return listCollection('products')
-    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+  return Object.values(STORE.products || {})
+    .filter(Boolean)
+    .sort((a, b) => (Number(b.updatedAt || b.createdAt || 0)) - (Number(a.updatedAt || a.createdAt || 0)))
     .slice(0, limit);
 }
 

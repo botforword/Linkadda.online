@@ -2308,6 +2308,7 @@ button {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 16px;
+  background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15), rgba(15, 23, 42, 0.6));
 }
 
 .catalog-media-frame img,
