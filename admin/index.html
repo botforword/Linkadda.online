@@ -23,9 +23,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="stylesheet" href="./assets/admin.css?v=37" />
+  <link rel="stylesheet" href="./assets/admin.css?v=39" />
   <script src="../preload.js?v=20261007_v5" charset="UTF-8"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/lucide@latest';"></script>
+  <script>
+    function renderAppLucideIcons() {
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        try { window.lucide.createIcons(); } catch (_) {}
+      }
+    }
+    renderAppLucideIcons();
+    document.addEventListener('DOMContentLoaded', renderAppLucideIcons);
+    window.addEventListener('load', renderAppLucideIcons);
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body data-theme="dark">
@@ -131,6 +141,6 @@
     </div>
   </div>
 
-  <script type="module" src="./js/app.js?v=37"></script>
+  <script type="module" src="./js/app.js?v=39"></script>
 </body>
 </html>

@@ -483,7 +483,9 @@ function updateSideNavActive(currentRoute) {
   if (!sideNav) return;
   if (!sideNav.children.length) {
     sideNav.innerHTML = navMarkup();
-    if (window.lucide) lucide.createIcons({ root: sideNav });
+    if (window.lucide) {
+      try { lucide.createIcons(); } catch (_) {}
+    }
   } else {
     sideNav.querySelectorAll('.nav-link').forEach((link) => {
       const r = link.dataset.route;
@@ -8963,7 +8965,9 @@ function renderView(data) {
     else if (current === 'banner') html = renderSingleEditorPage('banner', singleEditors.banner, data.banner || {});
     else html = renderDashboard(data);
     viewRoot.innerHTML = html;
-    if (window.lucide && viewRoot) lucide.createIcons({ root: viewRoot });
+    if (window.lucide) {
+      try { lucide.createIcons(); } catch (_) {}
+    }
     if (current === 'catalog' || current === 'products' || current === 'categories') initCatalogDragAndDrop();
     if (current === 'analytics') mountAnalyticsCharts();
     if (notifyCount) {
