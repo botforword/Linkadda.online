@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="stylesheet" href="./assets/admin.css?v=34" />
+  <link rel="stylesheet" href="./assets/admin.css?v=37" />
   <script src="../preload.js?v=20261007_v5" charset="UTF-8"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/lucide@latest';"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -86,6 +86,30 @@
     </main>
   </div>
 
+  <!-- Mobile App Native Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile Navigation">
+    <button class="mobile-nav-item active" type="button" data-route="dashboard" title="Dashboard">
+      <i data-lucide="layout-dashboard"></i>
+      <span>Dashboard</span>
+    </button>
+    <button class="mobile-nav-item" type="button" data-route="products" title="Products">
+      <i data-lucide="package"></i>
+      <span>Products</span>
+    </button>
+    <button class="mobile-nav-item" type="button" data-route="categories" title="Categories">
+      <i data-lucide="layers-3"></i>
+      <span>Categories</span>
+    </button>
+    <button class="mobile-nav-item" type="button" data-route="orders" title="Orders">
+      <i data-lucide="receipt-text"></i>
+      <span>Orders</span>
+    </button>
+    <button class="mobile-nav-item" type="button" id="mobileBottomMenuBtn" aria-label="Open navigation menu" title="Menu">
+      <i data-lucide="menu"></i>
+      <span>Menu</span>
+    </button>
+  </nav>
+
   <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
 
   <div class="modal-backdrop" id="modalBackdrop">
@@ -107,6 +131,6 @@
     </div>
   </div>
 
-  <script type="module" src="./js/app.js?v=36"></script>
+  <script type="module" src="./js/app.js?v=37"></script>
 </body>
 </html>

@@ -491,6 +491,14 @@ function updateSideNavActive(currentRoute) {
       link.classList.toggle('active', isActive);
     });
   }
+  const mobileNav = document.getElementById('mobileBottomNav');
+  if (mobileNav) {
+    mobileNav.querySelectorAll('.mobile-nav-item[data-route]').forEach((btn) => {
+      const r = btn.dataset.route;
+      const isActive = r === currentRoute || (r === 'products' && (currentRoute === 'products' || currentRoute === 'catalog')) || (r === 'categories' && currentRoute === 'categories');
+      btn.classList.toggle('active', isActive);
+    });
+  }
 }
 
 function collectionRowBadge(item) {
@@ -9192,6 +9200,7 @@ function attachGlobalHandlers() {
   document.getElementById('logoutBtn')?.addEventListener('click', confirmLogoutDialog);
   document.getElementById('sidebarLogoutBtn')?.addEventListener('click', confirmLogoutDialog);
   document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
+  document.getElementById('mobileBottomMenuBtn')?.addEventListener('click', toggleSidebar);
   sidebarCloseBtn?.addEventListener('click', closeSidebar);
   sidebarOverlay?.addEventListener('click', closeSidebar);
   notifyBtn?.addEventListener('click', () => {
