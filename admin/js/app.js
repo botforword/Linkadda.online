@@ -3726,6 +3726,7 @@ function mediaPreview(item, categoryMap = null, isEager = false) {
   const fn = src.split('/').pop().split('?')[0];
   const isFile = typeof window !== 'undefined' && window.location.protocol === 'file:';
   const localFallback = isFile ? `../images/${fn}` : `/images/${fn}`;
+  const loadAttr = isEager ? 'eager' : 'lazy';
   return `<img class="thumb-media" src="${escapeHtml(src)}" alt="${escapeHtml(item.title || item.name || 'Preview')}" loading="${loadAttr}" decoding="async" onerror="if(this.src!=='${localFallback}' && !this._triedLocal){this._triedLocal=true; this.src='${localFallback}';}else if(!this._failed){this._failed=true; this.src='/favicon.svg';}" />`;
 }
 
