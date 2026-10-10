@@ -81,10 +81,10 @@
       ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
     },
     "orders": {
-      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
+      ".read": true,
       ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
       "$order_id": {
-        ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online' || auth.uid === data.child('customerUid').val())",
+        ".read": true,
         ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online') || (newData.exists() && (!data.exists() || data.child('status').val() === 'pending'))"
       }
     }

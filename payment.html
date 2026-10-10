@@ -4281,6 +4281,26 @@ async function saveOrderToFirebase(amountText, methodName) {
       localStorage.setItem('linkadda_user_orders', JSON.stringify(filtered.slice(0, 30)));
     } catch (_) {}
 
+    // Un-blacklist newly generated order ID if previously marked
+    try {
+      const rawDeleted = localStorage.getItem('linkadda_deleted_order_ids_v1');
+      if (rawDeleted) {
+        const arr = JSON.parse(rawDeleted);
+        if (Array.isArray(arr) && arr.includes(String(orderId))) {
+          localStorage.setItem('linkadda_deleted_order_ids_v1', JSON.stringify(arr.filter(x => String(x) !== String(orderId))));
+        }
+      }
+    } catch (_) {}
+
+    // Broadcast instant 0ms cross-tab event to open admin panel tabs
+    try {
+      localStorage.setItem('linkadda_new_order_event', JSON.stringify({
+        orderId: orderId,
+        payload: payload,
+        timestamp: Date.now()
+      }));
+    } catch (_) {}
+
     orderData.orderId = orderId;
     return { orderId };
   } catch(e) {

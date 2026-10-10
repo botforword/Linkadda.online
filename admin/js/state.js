@@ -3,6 +3,27 @@ import { RTDB_NODES } from './config.js';
 import { safeJson, slugify, uid } from './utils.js';
 
 const CACHE_KEY = 'linkadda_admin_store_cache_v4';
+const DELETED_ORDERS_KEY = 'linkadda_deleted_order_ids_v1';
+
+export function getDeletedOrderIds() {
+  try {
+    const raw = localStorage.getItem(DELETED_ORDERS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr.map(String));
+    }
+  } catch (_) {}
+  return new Set();
+}
+
+export function markOrderDeleted(id) {
+  if (!id) return;
+  try {
+    const set = getDeletedOrderIds();
+    set.add(String(id));
+    localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify(Array.from(set)));
+  } catch (_) {}
+}
 
 function loadCachedStore() {
   const initial = {
@@ -23,6 +44,8 @@ function loadCachedStore() {
     sellers: {},
     seller_applications: {},
   };
+
+  const deletedIds = getDeletedOrderIds();
 
   // 1. Seed from window.__preloadedCatalog immediately (instant 0ms bootstrap)
   try {
@@ -62,6 +85,15 @@ function loadCachedStore() {
             initial[k] = { ...(initial[k] || {}), ...parsed[k] };
           }
         });
+        // Purge any blacklisted deleted orders from cached initial.orders
+        if (initial.orders && typeof initial.orders === 'object') {
+          for (const oid of Object.keys(initial.orders)) {
+            const item = initial.orders[oid];
+            if (deletedIds.has(String(oid)) || (item && (deletedIds.has(String(item.id)) || deletedIds.has(String(item.orderId))))) {
+              delete initial.orders[oid];
+            }
+          }
+        }
       }
     }
   } catch (_) {}
@@ -73,14 +105,24 @@ function loadCachedStore() {
       const userOrders = JSON.parse(rawUserOrders);
       if (Array.isArray(userOrders)) {
         if (!initial.orders || typeof initial.orders !== 'object') initial.orders = {};
+        let cleaned = false;
+        const keptOrders = [];
         userOrders.forEach((o) => {
           if (o && (o.orderId || o.id)) {
             const oid = String(o.orderId || o.id);
+            if (deletedIds.has(oid) || (o.id && deletedIds.has(String(o.id))) || (o.orderId && deletedIds.has(String(o.orderId)))) {
+              cleaned = true;
+              return;
+            }
+            keptOrders.push(o);
             if (!initial.orders[oid]) {
               initial.orders[oid] = { id: oid, orderId: oid, ...o };
             }
           }
         });
+        if (cleaned) {
+          localStorage.setItem('linkadda_user_orders', JSON.stringify(keptOrders));
+        }
       }
     }
   } catch (_) {}
@@ -240,6 +282,16 @@ function attachNode(key, mode = 'collection') {
         if (snap.exists() && snap.val()) {
           const val = snap.val();
           if (typeof val === 'object' && Object.keys(val).length > 0) {
+            if (key === 'orders') {
+              const deletedIds = getDeletedOrderIds();
+              for (const k of Object.keys(val)) {
+                const item = val[k];
+                if (deletedIds.has(String(k)) || (item && (deletedIds.has(String(item.id)) || deletedIds.has(String(item.orderId))))) {
+                  delete val[k];
+                  remove(ref(db, `orders/${k}`)).catch(() => {});
+                }
+              }
+            }
             STORE[key] = val;
             emit();
           } else if (mode === 'singleton') {
@@ -247,11 +299,14 @@ function attachNode(key, mode = 'collection') {
             emit();
           }
         } else if (!snap.exists() || !snap.val()) {
-          // If RTDB node is empty but STORE has data and user is admin, seed RTDB
-          if (auth.currentUser) {
+          // Never auto-seed transactional or queue nodes (orders, events, visitors)
+          if (!['orders', 'events', 'visitors'].includes(key) && auth.currentUser) {
             if (STORE[key] && typeof STORE[key] === 'object' && Object.keys(STORE[key]).length > 0) {
               set(ref(db, nodeName), STORE[key]).catch(() => {});
             }
+          } else if (key === 'orders') {
+            STORE.orders = {};
+            emit();
           }
         }
       })
@@ -263,16 +318,34 @@ function attachNode(key, mode = 'collection') {
         if (snap.exists() && snap.val()) {
           const val = snap.val();
           if (typeof val === 'object' && Object.keys(val).length > 0) {
+            if (key === 'orders') {
+              const deletedIds = getDeletedOrderIds();
+              for (const k of Object.keys(val)) {
+                const item = val[k];
+                if (deletedIds.has(String(k)) || (item && (deletedIds.has(String(item.id)) || deletedIds.has(String(item.orderId))))) {
+                  delete val[k];
+                  remove(ref(db, `orders/${k}`)).catch(() => {});
+                }
+              }
+            }
             STORE[key] = val;
             emit();
           } else if (mode === 'singleton') {
             STORE[key] = val;
             emit();
           }
+        } else {
+          // RTDB node is empty or all items were deleted: update memory state immediately
+          if (mode === 'collection') {
+            STORE[key] = {};
+            emit();
+          } else if (mode === 'singleton') {
+            STORE[key] = null;
+            emit();
+          }
         }
       },
       (err) => {
-        // Silently catch permission errors until auth resolves
         if (err?.code !== 'PERMISSION_DENIED') {
           console.warn(`RTDB node ${key} notice:`, err?.message || err);
         }
@@ -442,20 +515,58 @@ export async function deleteRecord(node, id) {
   }
 
   let targetKey = id;
+  let alternateId = null;
+
+  if (node === 'orders') {
+    markOrderDeleted(id);
+    // Also clean linkadda_user_orders immediately
+    try {
+      const rawUserOrders = localStorage.getItem('linkadda_user_orders');
+      if (rawUserOrders) {
+        const arr = JSON.parse(rawUserOrders);
+        if (Array.isArray(arr)) {
+          const filtered = arr.filter((o) => o && String(o.id) !== String(id) && String(o.orderId) !== String(id));
+          localStorage.setItem('linkadda_user_orders', JSON.stringify(filtered));
+        }
+      }
+    } catch (_) {}
+  }
+
   if (STORE[node]) {
     if (STORE[node][id]) {
+      const item = STORE[node][id];
+      if (item?.orderId) alternateId = item.orderId;
       delete STORE[node][id];
     } else {
       // Find matching key if id was an alternate identifier (e.g. orderId or slug)
       for (const k of Object.keys(STORE[node])) {
         const item = STORE[node][k];
         if (item && (String(item.id) === String(id) || String(item.orderId) === String(id) || String(item.slug) === String(id))) {
+          if (item?.id) alternateId = item.id;
+          if (item?.orderId) markOrderDeleted(item.orderId);
           delete STORE[node][k];
           targetKey = k;
           break;
         }
       }
     }
+    if (alternateId) markOrderDeleted(alternateId);
+
+    // Synchronously clean CACHE_KEY so refresh right after delete does not bring it back
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.[node]?.[targetKey]) {
+          delete parsed[node][targetKey];
+        }
+        if (alternateId && parsed?.[node]?.[alternateId]) {
+          delete parsed[node][alternateId];
+        }
+        localStorage.setItem(CACHE_KEY, JSON.stringify(parsed));
+      }
+    } catch (_) {}
+
     emitImmediate();
     syncWebsiteCache();
   }
@@ -465,6 +576,15 @@ export async function deleteRecord(node, id) {
       await remove(nodeRef(node, targetKey));
     } catch (err) {
       console.warn(`Failed to delete ${node}/${targetKey} from RTDB:`, err?.message || err);
+    }
+    // Direct REST delete fallback ensures 100% removal from Firebase
+    if (node === 'orders') {
+      try {
+        fetch(`https://linkadda-online-default-rtdb.firebaseio.com/orders/${targetKey}.json`, { method: 'DELETE' }).catch(() => {});
+        if (alternateId && alternateId !== targetKey) {
+          fetch(`https://linkadda-online-default-rtdb.firebaseio.com/orders/${alternateId}.json`, { method: 'DELETE' }).catch(() => {});
+        }
+      } catch (_) {}
     }
   }
 }
@@ -595,3 +715,53 @@ export function recentActivity(limit = 10) {
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
     .slice(0, limit);
 }
+
+// ── INSTANT CROSS-TAB & REALTIME SYNC FOR ORDERS ──
+if (typeof window !== 'undefined') {
+  // 1. Instant 0ms cross-tab broadcast: when customer buys in any tab on same browser
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'linkadda_new_order_event' && e.newValue) {
+      try {
+        const data = JSON.parse(e.newValue);
+        if (data && (data.orderId || data.payload)) {
+          const o = data.payload || data;
+          const oid = String(data.orderId || o.id || o.orderId);
+          const deletedIds = getDeletedOrderIds();
+          if (oid && !deletedIds.has(oid)) {
+            if (!STORE.orders || typeof STORE.orders !== 'object') STORE.orders = {};
+            STORE.orders[oid] = { id: oid, orderId: oid, ...o };
+            emitImmediate();
+          }
+        }
+      } catch (_) {}
+    }
+  });
+
+  // 2. Continuous 8s fallback polling ensures incoming orders arrive even if websocket drops
+  setInterval(async () => {
+    try {
+      const res = await fetch('https://linkadda-online-default-rtdb.firebaseio.com/orders.json');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          const deletedIds = getDeletedOrderIds();
+          let hasNew = false;
+          if (!STORE.orders || typeof STORE.orders !== 'object') STORE.orders = {};
+          for (const [k, v] of Object.entries(data)) {
+            if (!v || deletedIds.has(String(k)) || deletedIds.has(String(v.id || v.orderId))) {
+              continue;
+            }
+            if (!STORE.orders[k] || STORE.orders[k].status !== v.status || STORE.orders[k].updatedAt !== v.updatedAt) {
+              STORE.orders[k] = v;
+              hasNew = true;
+            }
+          }
+          if (hasNew) {
+            emit();
+          }
+        }
+      }
+    } catch (_) {}
+  }, 8000);
+}
+

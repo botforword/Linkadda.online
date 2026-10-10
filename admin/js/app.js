@@ -10438,6 +10438,15 @@ function attachGlobalHandlers() {
           try {
             await remove(ref(db, `order_approvals/${targetOrderId}`));
           } catch (_) {}
+          try {
+            const rawUserOrders = localStorage.getItem('linkadda_user_orders');
+            if (rawUserOrders) {
+              const parsed = JSON.parse(rawUserOrders);
+              if (Array.isArray(parsed)) {
+                localStorage.setItem('linkadda_user_orders', JSON.stringify(parsed.filter(x => String(x.id || x.orderId) !== String(targetOrderId))));
+              }
+            }
+          } catch (_) {}
 
           // 3. Purge from settings.recentApproved pool if present
           try {
