@@ -54,6 +54,7 @@ export const RTDB_NODES = {
 
 export const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard' },
+  { key: 'orders', label: 'Orders', icon: 'receipt-text' },
   { key: 'catalog', label: 'Catalog', icon: 'package' },
   { key: 'reviews', label: 'Reviews', icon: 'star' },
   { key: 'media', label: 'Media', icon: 'image-plus' },
@@ -61,9 +62,8 @@ export const NAV_ITEMS = [
   { key: 'banner', label: 'Banner', icon: 'badge-percent' },
   { key: 'faq', label: 'FAQ', icon: 'help-circle' },
   { key: 'testimonials', label: 'Testimonials', icon: 'messages-square' },
-  { key: 'settings', label: 'Settings', icon: 'settings-2' },
   { key: 'payment', label: 'Payment', icon: 'credit-card' },
-  { key: 'orders', label: 'Orders', icon: 'receipt-text' },
+  { key: 'settings', label: 'Settings', icon: 'settings-2' },
   { key: 'screenshots', label: 'Screenshots', icon: 'image' },
   { key: 'analytics', label: 'Analytics', icon: 'bar-chart-3' },
 ];

@@ -110,7 +110,13 @@ const catalogPrefs = readCatalogPrefs();
 const ui = {
   route: 'dashboard',
   catalogTab: 'products',
-  dashboardRange: 'all',
+  dashboardRange: (() => {
+    try {
+      const saved = localStorage.getItem('linkadda_admin_dashboard_range');
+      if (saved && ['day', 'week', 'month', 'all'].includes(saved)) return saved;
+    } catch (_) {}
+    return 'all';
+  })(),
   dashboardMetric: 'visitors',
   media: {
     search: '',
@@ -471,27 +477,28 @@ function renderPalette() {
 }
 
 function navMarkup() {
-  return NAV_ITEMS.map((item) => `
-    <a class="nav-link ${ui.route === item.key ? 'active' : ''}" href="#/${item.key}" data-route="${item.key}">
-      <i data-lucide="${escapeHtml(item.icon)}"></i>
-      <span>${escapeHtml(item.label)}</span>
-    </a>
-  `).join('');
+  const allOrders = listCollection('orders');
+  const pendingOrders = allOrders.filter((o) => !o.status || o.status === 'pending' || o.paymentStatus === 'pending').length;
+  return NAV_ITEMS.map((item) => {
+    const isOrders = item.key === 'orders';
+    const badgeHtml = isOrders && (pendingOrders > 0 || allOrders.length > 0)
+      ? `<span class="chip" style="margin-left:auto;background:${pendingOrders > 0 ? 'rgba(245,158,11,0.2)' : 'rgba(99,102,241,0.2)'};color:${pendingOrders > 0 ? '#fbbf24' : '#818cf8'};font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;">${pendingOrders > 0 ? pendingOrders : allOrders.length}</span>`
+      : '';
+    return `
+      <a class="nav-link ${ui.route === item.key ? 'active' : ''}" href="#/${item.key}" data-route="${item.key}">
+        <i data-lucide="${escapeHtml(item.icon)}"></i>
+        <span>${escapeHtml(item.label)}</span>
+        ${badgeHtml}
+      </a>
+    `;
+  }).join('');
 }
 
 function updateSideNavActive(currentRoute) {
   if (!sideNav) return;
-  if (!sideNav.children.length) {
-    sideNav.innerHTML = navMarkup();
-    if (window.lucide) {
-      try { lucide.createIcons(); } catch (_) {}
-    }
-  } else {
-    sideNav.querySelectorAll('.nav-link').forEach((link) => {
-      const r = link.dataset.route;
-      const isActive = r === currentRoute || ((currentRoute === 'products' || currentRoute === 'categories') && r === 'catalog');
-      link.classList.toggle('active', isActive);
-    });
+  sideNav.innerHTML = navMarkup();
+  if (window.lucide) {
+    try { lucide.createIcons(); } catch (_) {}
   }
   const mobileNav = document.getElementById('mobileBottomNav');
   if (mobileNav) {
@@ -2999,10 +3006,16 @@ function summarizeDashboard(range = ui.dashboardRange) {
     if (type === 'telegram_click' || type === 'review_submission' || type === 'visitor') return false;
     return type.includes('order') || type.includes('click') || Boolean(item.productId || item.package || item.productName);
   };
-  const currentVisitors = countInWindow(visitors, currentWindow.start, currentWindow.end);
-  const currentOrders = countInWindow(orders, currentWindow.start, currentWindow.end);
-  const currentClicks = countInWindow(events, currentWindow.start, currentWindow.end, clickPredicate);
-  const currentRevenue = sumInWindow(orders, currentWindow.start, currentWindow.end, (item) => item.amount, isPaidOrder);
+  const isAllRange = range === 'all';
+  const allVisitorsCount = Math.max(visitors.length, stats().visitors || 0);
+  const allClicksCount = Math.max(events.filter(clickPredicate).length, stats().clicks || 0);
+  const allOrdersCount = Math.max(orders.length, stats().orders || 0);
+  const allRevenueCount = orders.reduce((sum, item) => isPaidOrder(item) ? sum + parseMetricNumber(item.amount || item.amountINR || 0) : sum, 0);
+
+  const currentVisitors = isAllRange ? allVisitorsCount : countInWindow(visitors, currentWindow.start, currentWindow.end);
+  const currentOrders = isAllRange ? allOrdersCount : countInWindow(orders, currentWindow.start, currentWindow.end);
+  const currentClicks = isAllRange ? allClicksCount : countInWindow(events, currentWindow.start, currentWindow.end, clickPredicate);
+  const currentRevenue = isAllRange ? allRevenueCount : sumInWindow(orders, currentWindow.start, currentWindow.end, (item) => item.amount, isPaidOrder);
   const prevVisitors = countInWindow(visitors, previousWindow.start, previousWindow.end);
   const prevOrders = countInWindow(orders, previousWindow.start, previousWindow.end);
   const prevClicks = countInWindow(events, previousWindow.start, previousWindow.end, clickPredicate);
@@ -4638,7 +4651,7 @@ function renderDashboard(data) {
               label: 'Visitors',
               value: formatNumber(summary.visitors),
               change: summary.range === 'all' ? null : summary.visitorsTrend,
-              note: summary.range === 'all' ? 'All-time unique visitors' : (summary.visitors === 0 && summary.totals.visitors > 0 ? `0 in 24h · ${formatNumber(summary.totals.visitors)} all-time` : `vs previous ${summary.range}`),
+              note: summary.range === 'all' ? `All-time unique visitors · ${summary.totals.todaysVisitors || 0} today` : (summary.visitors === 0 && summary.totals.visitors > 0 ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.visitors)} all-time` : `vs previous ${summary.range}`),
               icon: 'users',
               series: summary.visitorSeries,
               tone: 'primary',
@@ -4647,7 +4660,7 @@ function renderDashboard(data) {
               label: 'Order Clicks',
               value: formatNumber(summary.clicks),
               change: summary.range === 'all' ? null : summary.clicksTrend,
-              note: summary.range === 'all' ? 'All-time store clicks' : (summary.clicks === 0 && summary.totals.clicks > 0 ? `0 in 24h · ${formatNumber(summary.totals.clicks)} all-time` : `vs previous ${summary.range}`),
+              note: summary.range === 'all' ? `All-time store clicks · ${summary.totals.todaysClicks || 0} today` : (summary.clicks === 0 && summary.totals.clicks > 0 ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.clicks)} all-time` : `vs previous ${summary.range}`),
               icon: 'mouse-pointer-click',
               series: summary.clickSeries,
               tone: 'secondary',
@@ -4656,7 +4669,7 @@ function renderDashboard(data) {
               label: 'Orders',
               value: formatNumber(summary.orders),
               change: summary.range === 'all' ? null : summary.ordersTrend,
-              note: summary.range === 'all' ? 'All-time customer orders' : (summary.orders === 0 && summary.totals.orders > 0 ? `0 in 24h · ${formatNumber(summary.totals.orders)} all-time` : `vs previous ${summary.range}`),
+              note: summary.range === 'all' ? `All customer orders · ${summary.totals.todaysOrders || 0} today` : (summary.orders === 0 && summary.totals.orders > 0 ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.orders)} all-time` : `vs previous ${summary.range}`),
               icon: 'receipt-text',
               series: summary.orderSeries,
               tone: 'success',
@@ -4665,7 +4678,7 @@ function renderDashboard(data) {
               label: 'Revenue',
               value: formatNumber(summary.revenue),
               change: summary.range === 'all' ? null : summary.revenueTrend,
-              note: summary.range === 'all' ? 'All-time store revenue' : 'From paid / completed orders',
+              note: summary.range === 'all' ? 'All-time verified store revenue' : 'From paid / completed orders',
               icon: 'banknote',
               series: summary.revenueSeries,
               tone: 'accent',
@@ -9315,7 +9328,8 @@ function attachGlobalHandlers() {
       return;
     }
     if (action === 'set-range') {
-      ui.dashboardRange = actionBtn.dataset.range || 'day';
+      ui.dashboardRange = actionBtn.dataset.range || 'all';
+      try { localStorage.setItem('linkadda_admin_dashboard_range', ui.dashboardRange); } catch (_) {}
       renderView(ui.data || {});
       return;
     }

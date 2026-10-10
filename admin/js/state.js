@@ -66,6 +66,25 @@ function loadCachedStore() {
     }
   } catch (_) {}
 
+  // 3b. Merge customer checkout orders from local storage as reliable fallback
+  try {
+    const rawUserOrders = localStorage.getItem('linkadda_user_orders');
+    if (rawUserOrders) {
+      const userOrders = JSON.parse(rawUserOrders);
+      if (Array.isArray(userOrders)) {
+        if (!initial.orders || typeof initial.orders !== 'object') initial.orders = {};
+        userOrders.forEach((o) => {
+          if (o && (o.orderId || o.id)) {
+            const oid = String(o.orderId || o.id);
+            if (!initial.orders[oid]) {
+              initial.orders[oid] = { id: oid, orderId: oid, ...o };
+            }
+          }
+        });
+      }
+    }
+  } catch (_) {}
+
   // 4. Sanitize store branding to prevent JaiGram crossover
   try {
     if (initial.settings && typeof initial.settings === 'object') {
