@@ -3467,6 +3467,16 @@ function downloadCurrentQRCode(methodId) {
 
 // â”€â”€ SCREEN NAVIGATION â”€â”€
 function showScreen(n) {
+  if (n < 4) {
+    orderSubmissionInProgress = false;
+    const s3Btn = document.querySelector('#screen3 .btn-proceed');
+    if (s3Btn) {
+      s3Btn.disabled = false;
+      s3Btn.style.pointerEvents = '';
+      s3Btn.style.opacity = '';
+      if (s3Btn.dataset.origHtml) s3Btn.innerHTML = s3Btn.dataset.origHtml;
+    }
+  }
   document.querySelectorAll('.screen').forEach((s, i) => {
     s.classList.remove('active');
   });
@@ -3765,33 +3775,62 @@ function handleScreenshot(e) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
+    const rawData = ev.target.result;
     const img = document.getElementById('previewImg');
-    img.src = ev.target.result;
+    img.src = rawData;
     img.style.display = 'block';
     const zone = document.getElementById('uploadZone');
     zone.style.borderColor = 'var(--green)';
     zone.style.background = 'rgba(34,197,94,0.04)';
     screenshotUploaded = true;
     document.getElementById('alertUpload').classList.remove('show');
+
+    // Pre-compress in background immediately so submit button has zero lag!
+    window.__cachedCompressedScreenshot = null;
+    compressImageBase64(rawData, 720, 0.65).then(compressed => {
+      window.__cachedCompressedScreenshot = compressed;
+    }).catch(() => {
+      window.__cachedCompressedScreenshot = rawData;
+    });
   };
   reader.readAsDataURL(file);
 }
 
 // ———— CONFIRM UPLOAD ————
+let orderSubmissionInProgress = false;
+
 async function confirmUpload() {
+  // 1. Strict multi-click prevention: ignore if already submitting
+  if (orderSubmissionInProgress) {
+    return;
+  }
   if (!screenshotUploaded) {
     document.getElementById('alertUpload').classList.add('show');
     return;
   }
-  const submitBtn = document.querySelector('#screen3 .btn-proceed');
-  const originalText = submitBtn.dataset.origHtml || submitBtn.innerHTML;
-  submitBtn.dataset.origHtml = originalText;
 
-  // Pre-generate order ID immediately so it is NEVER 'pending'
+  // Lock flag immediately
+  orderSubmissionInProgress = true;
+
+  const submitBtn = document.querySelector('#screen3 .btn-proceed');
+  const originalText = submitBtn ? (submitBtn.dataset.origHtml || submitBtn.innerHTML) : '<i class="fa-solid fa-paper-plane"></i> Submit & Contact on Telegram';
+  if (submitBtn) {
+    submitBtn.dataset.origHtml = originalText;
+    submitBtn.disabled = true;
+    submitBtn.style.pointerEvents = 'none';
+    submitBtn.style.opacity = '0.9';
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Submitting Order...';
+  }
+
+  // 2. Lock ONE single unique order ID immediately — guaranteed no duplicate orders on rapid taps
   if (!orderData.orderId && !requestedCheckout.orderId) {
     if (window._fbPush && window._fbRef && window._fbDB) {
-      const orderRef = window._fbPush(window._fbRef(window._fbDB, 'orders'));
-      orderData.orderId = orderRef.key;
+      try {
+        const orderRef = window._fbPush(window._fbRef(window._fbDB, 'orders'));
+        orderData.orderId = orderRef.key;
+      } catch (_) {
+        orderData.orderId = 'ord_' + Date.now();
+      }
     } else {
       orderData.orderId = 'ord_' + Date.now();
     }
@@ -3799,52 +3838,56 @@ async function confirmUpload() {
   const targetOrderId = orderData.orderId || requestedCheckout.orderId || ('ord_' + Date.now());
   orderData.orderId = targetOrderId;
 
-  triggerButtonProgress(submitBtn, '<i class="fa-solid fa-spinner fa-spin"></i> Submitting Order...', 600);
-
   try {
     const names = { upi: 'UPI', bep20: 'USDT BEP-20', eth: 'USDT ERC-20', binancepay: 'Binance Pay', paypal: 'PayPal' };
     const amountText = paymentAmountForMethod(selectedMethod);
     const methodName = names[selectedMethod] || (selectedMethod ? selectedMethod.toUpperCase() : 'UPI');
 
-    // Reliably save order to Firebase with robust dual SDK + REST persistence
-    const savePromise = saveOrderToFirebase(amountText, methodName);
-    const safetyTimeout = new Promise(r => setTimeout(() => r({ orderId: targetOrderId }), 10000));
-
-    const savedOrder = await Promise.race([savePromise, safetyTimeout]);
-    const orderId = savedOrder?.orderId || targetOrderId;
-
+    // 3. Immediately prepare Screen 4 details so there is ZERO delay
     const resolvedPackName = orderData.productName || orderData.title || (orderData.name && !orderData.name.includes('UPI') && !orderData.name.includes('GPay') ? orderData.name : '') || 'VIP Digital Pack';
     document.getElementById('finalName').textContent = resolvedPackName;
     document.getElementById('finalAmount').textContent = amountText;
     document.getElementById('finalMethod').textContent = methodName;
 
-    // Show category name on success screen
     document.getElementById('successCatName').textContent = resolvedPackName;
     document.getElementById('successAmtLine').textContent = amountText + ' via ' + methodName;
 
-    // Build Telegram message with order details
-    const tgUrl = buildTelegramOrderUrl(orderId, amountText, methodName);
+    // Telegram URLs
+    const tgUrl = buildTelegramOrderUrl(targetOrderId, amountText, methodName);
     const topTg = document.getElementById('tgLink');
     if (topTg) topTg.href = tgUrl;
     const bottomTg = document.getElementById('tgLinkBottom');
     if (bottomTg) bottomTg.href = tgUrl;
 
+    // 4. Start persistent order save in background
+    const savePromise = saveOrderToFirebase(amountText, methodName);
+
+    // 5. Fast page transition: wait just 350ms so user sees crisp spinner feedback, then show Screen 4 immediately
+    await new Promise(r => setTimeout(r, 350));
+
     showScreen(4);
     setupTelegramButtons();
     launchConfetti();
+
     try {
       localStorage.removeItem('linkadda_cart_v1');
     } catch (_) {}
 
+    // Await background save silently
+    savePromise.catch(err => {
+      console.warn('Background save note:', err);
+    });
+
   } catch (err) {
     console.error('Submission error:', err);
-    alert('Something went wrong. Please try again.');
-  } finally {
-    setTimeout(() => {
-      submitBtn.classList.remove('btn-progress-active');
-      submitBtn.dataset.progressing = 'false';
+    orderSubmissionInProgress = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.pointerEvents = '';
+      submitBtn.style.opacity = '';
       submitBtn.innerHTML = originalText;
-    }, 400);
+    }
+    alert('Something went wrong. Please try again.');
   }
 }
 
@@ -4065,13 +4108,13 @@ async function compressImageBase64(base64Str, maxWidth = 720, quality = 0.65) {
 // ———— UPLOAD SCREENSHOT TO STORAGE VIA API WITH FAST FALLBACK ————
 async function uploadScreenshot(orderId, base64Data) {
   try {
-    const compressed = await compressImageBase64(base64Data, 720, 0.65);
+    const compressed = window.__cachedCompressedScreenshot || await compressImageBase64(base64Data, 720, 0.65);
     const fileName = `${orderId || 'order'}_${Date.now()}.jpg`;
 
-    // 1. Try Serverless Supabase Upload via /api/upload with short 1.5s timeout
+    // 1. Try Serverless Supabase Upload via /api/upload with short 500ms timeout
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 1500);
+      const timer = setTimeout(() => controller.abort(), 500);
 
       const res = await fetch('/api/upload', {
         method: 'POST',
