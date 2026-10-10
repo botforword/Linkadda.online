@@ -2612,7 +2612,7 @@ function findDefaultCatalogProduct(targetId) {
       prodName = `${prodName} (${pTier})`;
     }
     applyOrderToUI({
-      id: pId || 'pinned-deal',
+      id: pId || (pName ? normalizeLookupValue(pName) : 'pinned-deal'),
       name: prodName,
       tier: pTier,
       inr: formatCurrencyValue(inrVal, 'INR'),
@@ -2648,7 +2648,7 @@ function findDefaultCatalogProduct(targetId) {
     const inrVal = extractMoneyNumber(pInr);
     const usdVal = extractMoneyNumber(pUsd);
     applyOrderToUI({
-      id: pId || 'pinned-deal',
+      id: pId || (pName ? normalizeLookupValue(pName) : 'pinned-deal'),
       name: cleanTitle,
       inr: Number.isFinite(inrVal) ? formatCurrencyValue(inrVal, 'INR') : '₹4,399',
       usd: Number.isFinite(usdVal) ? formatCurrencyValue(usdVal, 'USD') : '$109',
@@ -2740,9 +2740,21 @@ function normalizeProductMatchTargets(orderInfo = {}) {
 function findLiveProductForOrder(orderInfo = {}) {
   const targets = new Set(normalizeProductMatchTargets(orderInfo));
   if (!targets.size) return null;
-  return productCatalog.find((item) => {
+
+  // 1. Exact match first across all products (exclude banner pinned-deal unless explicitly requested)
+  const exact = productCatalog.find((item) => {
+    const isPinned = item.id === 'pinned-deal' || item.id === 'all-collection-pack';
+    if (isPinned && !targets.has('pinned-deal') && !targets.has('all-collection-pack')) return false;
     const haystacks = [item.id, item.key, item.slug, item.title, item.name].map(normalizeDisplayLookup).filter(Boolean);
-    return haystacks.some((value) => targets.has(value) || [...targets].some((target) => value.includes(target) || target.includes(value)));
+    return haystacks.some((value) => targets.has(value));
+  });
+  if (exact) return exact;
+
+  // 2. Loose match only for non-pinned catalog products (never falsely match pinned-deal)
+  return productCatalog.find((item) => {
+    if (item.id === 'pinned-deal' || item.id === 'all-collection-pack') return false;
+    const haystacks = [item.id, item.key, item.slug, item.title, item.name].map(normalizeDisplayLookup).filter(Boolean);
+    return haystacks.some((value) => [...targets].some((target) => target && value && (value.includes(target) || target.includes(value))));
   }) || null;
 }
 
@@ -3083,7 +3095,8 @@ async function loadProductsCatalog() {
 
         const currId = normalizeLookupValue(orderData.id || requestedCheckout.productId);
         const currName = normalizeLookupValue(orderData.name);
-        if (currId === 'pinned-deal' || currId === 'all-collection-pack' || currName.includes('collection') || !orderData.id) {
+        const isExplicitPinnedDeal = currId === 'pinned-deal' || currId === 'all-collection-pack' || currName === 'all-collection-pack' || currName === 'all-collection';
+        if (isExplicitPinnedDeal) {
           applyOrderToUI({
             id: 'pinned-deal',
             slug: 'all-collection-pack',
@@ -3304,17 +3317,17 @@ async function ensureCheckoutOrderLoaded() {
       const usdNum = Number.isFinite(customUsd) && customUsd > 0 ? customUsd : (Number.isFinite(matched.amountUSDValue) ? matched.amountUSDValue : (extractMoneyNumber(matched.rawUSD || matched.usd) || 109));
       const orderId = requestedCheckout.orderId || '';
 
-      let prodName = pName ? decodeURIComponent(pName) : (matched.title || matched.name || 'All Collection Pack');
+      let prodName = pName ? decodeURIComponent(pName) : (matched.title || matched.name || 'Product');
       if (pTier && !prodName.includes(pTier)) {
         prodName = `${prodName} (${pTier})`;
       }
 
       const nextOrder = {
         orderId: orderId,
-        id: orderId || matched.id || 'pinned-deal',
+        id: orderId || matched.id || (pName ? normalizeLookupValue(pName) : 'pinned-deal'),
         checkoutToken: requestedCheckout.token || '',
-        productId: matched.id || matched.key || requestedCheckout.productId || 'pinned-deal',
-        productSlug: matched.slug || 'all-collection-pack',
+        productId: matched.id || matched.key || requestedCheckout.productId || (pName ? normalizeLookupValue(pName) : 'pinned-deal'),
+        productSlug: matched.slug || (pName ? normalizeLookupValue(pName) : 'all-collection-pack'),
         productName: prodName,
         name: prodName,
         tier: pTier,

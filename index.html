@@ -1323,14 +1323,14 @@
       selectedTier?.dataset?.inr ||
       link.dataset?.inr ||
       url.searchParams.get('inr') ||
-      card?.querySelector('.pcard-price, .fk-card-price-current, .fk-pv-price-current')?.textContent ||
+      card?.querySelector('.fk-price-inr, .pcard-price, .fk-card-price-current, .fk-pv-price-current')?.textContent ||
       ''
     );
     const usd = cleanPrice(
       selectedTier?.dataset?.usd ||
       link.dataset?.usd ||
       url.searchParams.get('usd') ||
-      card?.querySelector('.pcard-price-usd, .fk-pv-price-usd')?.textContent ||
+      card?.querySelector('.fk-price-usd, .pcard-price-usd, .fk-pv-price-usd')?.textContent ||
       ''
     );
     const tier = selectedTier?.dataset?.vids || link.dataset?.tier || url.searchParams.get('tier') || '';
@@ -1468,44 +1468,47 @@
     },
   };
 
+  function getCatalogItemRank(item) {
+    if (!item || typeof item !== 'object') return 999999;
+    const o = item.displayOrder;
+    if (o !== undefined && o !== null && String(o).trim() !== '' && !isNaN(Number(o))) {
+      const n = Number(o);
+      return n > 0 ? n : 999999;
+    }
+    const so = item.sourceOrder ?? item.order;
+    if (so !== undefined && so !== null && String(so).trim() !== '' && !isNaN(Number(so))) {
+      const sn = Number(so);
+      return sn > 0 ? sn : 999999;
+    }
+    return 999999;
+  }
+
+  function compareCatalogSort(a, b) {
+    const rankA = getCatalogItemRank(a);
+    const rankB = getCatalogItemRank(b);
+    if (rankA !== rankB) return rankA - rankB;
+    const timeA = Number(a.createdAt || a.updatedAt) || 0;
+    const timeB = Number(b.createdAt || b.updatedAt) || 0;
+    if (timeA !== timeB) return timeA - timeB;
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  }
+
   function normalizeRecords(records) {
     if (!records || typeof records !== 'object') return [];
     return Object.entries(records)
       .map(([id, item]) => ({ id, ...(item || {}) }))
-      .filter(item => item && (item.status === undefined || item.status === 'active'))
-      .sort((a, b) => {
-        const orderA = a.displayOrder !== undefined && a.displayOrder !== null && a.displayOrder !== '' && !isNaN(Number(a.displayOrder)) ? Number(a.displayOrder) : 999999;
-        const orderB = b.displayOrder !== undefined && b.displayOrder !== null && b.displayOrder !== '' && !isNaN(Number(b.displayOrder)) ? Number(b.displayOrder) : 999999;
-        if (orderA !== orderB) return orderA - orderB;
-        const timeA = Number(a.createdAt || a.updatedAt) || 0;
-        const timeB = Number(b.createdAt || b.updatedAt) || 0;
-        return timeB - timeA;
-      });
+      .filter(item => item && item.status !== 'hidden' && item.status !== 'draft' && item.status !== 'deleted' && item.status !== 'inactive')
+      .sort(compareCatalogSort);
   }
 
   function getLiveRecords() {
     const prods = normalizeRecords(liveCollections.products);
     if (prods && prods.length > 0) {
-      // Re-sort strictly by displayOrder to match Admin Panel Catalog position
-      return prods.sort((a, b) => {
-        const orderA = a.displayOrder !== undefined && a.displayOrder !== null && a.displayOrder !== '' && !isNaN(Number(a.displayOrder)) ? Number(a.displayOrder) : 999999;
-        const orderB = b.displayOrder !== undefined && b.displayOrder !== null && b.displayOrder !== '' && !isNaN(Number(b.displayOrder)) ? Number(b.displayOrder) : 999999;
-        if (orderA !== orderB) return orderA - orderB;
-        const timeA = Number(a.createdAt || a.updatedAt) || 0;
-        const timeB = Number(b.createdAt || b.updatedAt) || 0;
-        return timeB - timeA;
-      });
+      return prods.sort(compareCatalogSort);
     }
 
     const cats = normalizeRecords(liveCollections.categories);
-    return cats.sort((a, b) => {
-      const orderA = a.displayOrder !== undefined && a.displayOrder !== null && a.displayOrder !== '' && !isNaN(Number(a.displayOrder)) ? Number(a.displayOrder) : 999999;
-      const orderB = b.displayOrder !== undefined && b.displayOrder !== null && b.displayOrder !== '' && !isNaN(Number(b.displayOrder)) ? Number(b.displayOrder) : 999999;
-      if (orderA !== orderB) return orderA - orderB;
-      const timeA = Number(a.createdAt || a.updatedAt) || 0;
-      const timeB = Number(b.createdAt || b.updatedAt) || 0;
-      return timeB - timeA;
-    });
+    return cats.sort(compareCatalogSort);
   }
   window.getLiveRecords = getLiveRecords;
   window.liveCollections = liveCollections;

@@ -261,9 +261,35 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
         }
       } catch(_) {}
 
+      const getItemRank = (item) => {
+        if (!item || typeof item !== 'object') return 999999;
+        const o = item.displayOrder;
+        if (o !== undefined && o !== null && String(o).trim() !== '' && !isNaN(Number(o))) {
+          const n = Number(o);
+          return n > 0 ? n : 999999;
+        }
+        const so = item.sourceOrder ?? item.order;
+        if (so !== undefined && so !== null && String(so).trim() !== '' && !isNaN(Number(so))) {
+          const sn = Number(so);
+          return sn > 0 ? sn : 999999;
+        }
+        return 999999;
+      };
+      const compareSort = (a, b) => {
+        const rankA = getItemRank(a);
+        const rankB = getItemRank(b);
+        if (rankA !== rankB) return rankA - rankB;
+        const timeA = Number(a.createdAt || a.updatedAt) || 0;
+        const timeB = Number(b.createdAt || b.updatedAt) || 0;
+        if (timeA !== timeB) return timeA - timeB;
+        return String(a.id || '').localeCompare(String(b.id || ''));
+      };
+
       if (pills && catData.categories && Object.keys(catData.categories).length) {
-        const cats = Object.entries(catData.categories).map(([k, c]) => Object.assign({ id: k }, c));
-        cats.sort((a,b) => (Number(a.displayOrder||a.order||999) - Number(b.displayOrder||b.order||999)));
+        const cats = Object.entries(catData.categories)
+          .map(([k, c]) => Object.assign({ id: k }, c))
+          .filter(c => c && c.status !== 'hidden' && c.status !== 'deleted' && c.status !== 'draft');
+        cats.sort(compareSort);
         const count = Object.keys(catData.products || {}).length;
         let pillsHtml = '<button type="button" class="category-pill active" data-cat="all" onclick="window.filterFkCategory ? window.filterFkCategory(\'all\') : null">' +
           '<i class="fa-solid fa-border-all"></i> All Packs <span class="pill-count">(' + count + ')</span>' +
@@ -278,8 +304,10 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
       }
 
       if (catData.products && Object.keys(catData.products).length) {
-        const prods = Object.entries(catData.products).map(([k, p]) => Object.assign({ id: k }, p));
-        prods.sort((a,b) => (Number(a.displayOrder||a.sourceOrder||999) - Number(b.displayOrder||b.sourceOrder||999)));
+        const prods = Object.entries(catData.products)
+          .map(([k, p]) => Object.assign({ id: k }, p))
+          .filter(p => p && p.status !== 'hidden' && p.status !== 'deleted' && p.status !== 'draft');
+        prods.sort(compareSort);
         const html = prods.map((p, idx) => buildCard(p.id, p, idx)).join('');
         grid._lastRenderedHtml = html;
         grid.innerHTML = html;

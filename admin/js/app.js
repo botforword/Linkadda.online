@@ -110,7 +110,7 @@ const catalogPrefs = readCatalogPrefs();
 const ui = {
   route: 'dashboard',
   catalogTab: 'products',
-  dashboardRange: 'day',
+  dashboardRange: 'all',
   dashboardMetric: 'visitors',
   media: {
     search: '',
@@ -1313,7 +1313,7 @@ function renderProductEditor(record = {}, schema = null) {
 
               <div class="field">
                 <label for="displayOrder">Display Ranking Order (#)</label>
-                <input class="input" type="number" name="displayOrder" id="displayOrder" value="${escapeHtml(String(data.displayOrder ?? 0))}" placeholder="0" />
+                <input class="input" type="number" name="displayOrder" id="displayOrder" value="${escapeHtml(String(data.displayOrder ?? ((listCollection('products').filter(i => i.status !== 'deleted').length || 0) + 1)))}" placeholder="1" />
                 <small class="field-hint">Catalog sorting order (1 = appears first at the top).</small>
               </div>
             </div>
@@ -1791,7 +1791,10 @@ function getProductEditorRecord(form) {
     specMediaCount: form.querySelector('[name="specMediaCount"]')?.value || '',
     orderLink: form.querySelector('[name="orderLink"]')?.value || '',
     status: form.querySelector('[name="status"]')?.value || 'active',
-    displayOrder: form.querySelector('[name="displayOrder"]')?.value || '0',
+    displayOrder: (() => {
+      const v = form.querySelector('[name="displayOrder"]')?.value;
+      return (v !== undefined && v !== null && String(v).trim() !== '' && !isNaN(Number(v)) && Number(v) > 0) ? Math.floor(Number(v)) : 1;
+    })(),
   };
 }
 
@@ -4047,7 +4050,8 @@ function renderCatalogProductCard(item, node, categoryMap = null, cardIndex = 0)
   const tierCount = tiers.length;
   const toggleAction = String(item.status || 'active') === 'hidden' ? 'Show' : 'Hide';
   const toggleIcon = String(item.status || 'active') === 'hidden' ? 'eye' : 'eye-off';
-  const posBadge = `<button type="button" class="catalog-pos-badge-btn" data-action="move-position" data-node="${node}" data-id="${escapeHtml(item.id)}" title="Click to move position">Pos #${item.displayOrder || '1'} ↕</button>`;
+  const orderVal = (item.displayOrder !== undefined && item.displayOrder !== null && String(item.displayOrder).trim() !== '' && !isNaN(Number(item.displayOrder)) && Number(item.displayOrder) > 0) ? Number(item.displayOrder) : (cardIndex + 1);
+  const posBadge = `<button type="button" class="catalog-pos-badge-btn" data-action="move-position" data-node="${node}" data-id="${escapeHtml(item.id)}" title="Click to move position">Pos #${orderVal} ↕</button>`;
   const tierBadge = tierCount > 0 
     ? `<button type="button" class="catalog-tier-badge-btn" data-action="edit-tiers" data-node="${node}" data-id="${escapeHtml(item.id)}" title="Click to manage ${tierCount} sub-plans"><i data-lucide="layers"></i> ${tierCount} Sub-Plans</button>` 
     : '';
@@ -4137,7 +4141,8 @@ function renderCatalogCategoryCard(item, node, categoryMap = null, cardIndex = 0
   const productCount = countProductsForCategory(item);
   const toggleAction = String(item.status || 'active') === 'hidden' ? 'Show' : 'Hide';
   const toggleIcon = String(item.status || 'active') === 'hidden' ? 'eye' : 'eye-off';
-  const posBadge = `<button type="button" class="catalog-pos-badge-btn" data-action="move-position" data-node="${node}" data-id="${escapeHtml(item.id)}" title="Click to move position">Pos #${item.displayOrder || '1'} ↕</button>`;
+  const orderVal = (item.displayOrder !== undefined && item.displayOrder !== null && String(item.displayOrder).trim() !== '' && !isNaN(Number(item.displayOrder)) && Number(item.displayOrder) > 0) ? Number(item.displayOrder) : (cardIndex + 1);
+  const posBadge = `<button type="button" class="catalog-pos-badge-btn" data-action="move-position" data-node="${node}" data-id="${escapeHtml(item.id)}" title="Click to move position">Pos #${orderVal} ↕</button>`;
   const badges = [
     posBadge,
     catalogCardBadge(item.status),
@@ -4828,6 +4833,31 @@ function renderDashboard(data) {
   `;
 }
 
+function getCatalogSortRank(item) {
+  if (!item || typeof item !== 'object') return 999999;
+  const o = item.displayOrder;
+  if (o !== undefined && o !== null && String(o).trim() !== '' && !isNaN(Number(o))) {
+    const n = Number(o);
+    return n > 0 ? n : 999999;
+  }
+  const so = item.sourceOrder ?? item.order;
+  if (so !== undefined && so !== null && String(so).trim() !== '' && !isNaN(Number(so))) {
+    const sn = Number(so);
+    return sn > 0 ? sn : 999999;
+  }
+  return 999999;
+}
+
+function compareCatalogSort(a, b) {
+  const rankA = getCatalogSortRank(a);
+  const rankB = getCatalogSortRank(b);
+  if (rankA !== rankB) return rankA - rankB;
+  const timeA = Number(a.createdAt || a.updatedAt) || 0;
+  const timeB = Number(b.createdAt || b.updatedAt) || 0;
+  if (timeA !== timeB) return timeA - timeB;
+  return String(a.id || '').localeCompare(String(b.id || ''));
+}
+
 function filterItems(items, node = 'products') {
   const source = Array.isArray(items)
     ? items
@@ -4866,10 +4896,11 @@ function filterItems(items, node = 'products') {
       return value === categoryTerm || slugify(value) === categoryTerm || slugify(item.category || '') === categoryTerm;
     });
   }
+
   if (ui.sort === 'title') {
     list.sort((a, b) => String(a.title || '').localeCompare(String(b.title || '')));
   } else if (ui.sort === 'displayOrder') {
-    list.sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0));
+    list.sort(compareCatalogSort);
   } else {
     list.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   }
@@ -4981,7 +5012,7 @@ function openCatalogPreview(node, id) {
 function orderedCategories() {
   return listCollection('categories')
     .filter((item) => item.status !== 'deleted')
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    .sort(compareCatalogSort);
 }
 
 async function reorderCategory(id, direction) {
@@ -5003,7 +5034,7 @@ async function reorderProductPosition(itemId, targetPosInput) {
   const nodeLabel = node === 'categories' ? 'Category' : 'Product';
   const allItems = listCollection(node)
     .filter((item) => item.status !== 'deleted' && !String(item.id || '').includes('/'))
-    .sort((a, b) => (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0) || (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0));
+    .sort(compareCatalogSort);
 
   if (!allItems.length) return;
 
@@ -5069,7 +5100,7 @@ function openMovePositionModal(itemId) {
   const nodeLabel = node === 'categories' ? 'Category' : 'Product';
   const allItems = listCollection(node)
     .filter((item) => item.status !== 'deleted')
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0) || (a.createdAt || 0) - (b.createdAt || 0));
+    .sort(compareCatalogSort);
 
   const itemIndex = allItems.findIndex((item) => item.id === itemId);
   if (itemIndex === -1) return;
@@ -5200,7 +5231,7 @@ function initCatalogDragAndDrop() {
       const node = ui.catalogTab === 'categories' ? 'categories' : 'products';
       const allItems = listCollection(node)
         .filter((item) => item.status !== 'deleted')
-        .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0) || (a.createdAt || 0) - (b.createdAt || 0));
+        .sort(compareCatalogSort);
 
       const targetIndex = allItems.findIndex((item) => item.id === targetId);
       if (targetIndex === -1) return;
@@ -9390,7 +9421,7 @@ function attachGlobalHandlers() {
       const activeNode = node || (ui.catalogTab === 'categories' ? 'categories' : 'products');
       const allItems = listCollection(activeNode)
         .filter((item) => item.status !== 'deleted')
-        .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0) || (a.createdAt || 0) - (b.createdAt || 0));
+        .sort(compareCatalogSort);
       const curIdx = allItems.findIndex((item) => item.id === id);
       if (curIdx > 0) {
         await reorderProductPosition(id, curIdx);
@@ -9403,7 +9434,7 @@ function attachGlobalHandlers() {
       const activeNode = node || (ui.catalogTab === 'categories' ? 'categories' : 'products');
       const allItems = listCollection(activeNode)
         .filter((item) => item.status !== 'deleted')
-        .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0) || (a.createdAt || 0) - (b.createdAt || 0));
+        .sort(compareCatalogSort);
       const curIdx = allItems.findIndex((item) => item.id === id);
       if (curIdx >= 0 && curIdx < allItems.length - 1) {
         await reorderProductPosition(id, curIdx + 2);
@@ -10603,9 +10634,13 @@ function attachGlobalHandlers() {
       let next = sanitizeRecordFromForm(form, schema.fields, id ? getItem(node, id) || {} : {});
       if (node === 'products') {
         const prodData = getProductEditorRecord(form);
+        const nonDeletedCount = existingItems.filter(p => p.status !== 'deleted').length;
+        const fallbackOrder = !id ? (nonDeletedCount + 1) : (Number(existingRecord.displayOrder) > 0 ? Number(existingRecord.displayOrder) : 1);
+        const resolvedOrder = Number(prodData.displayOrder) > 0 ? Number(prodData.displayOrder) : fallbackOrder;
         next = {
           ...next,
           ...prodData,
+          displayOrder: resolvedOrder,
           image: prodData.image,
           thumbnail: prodData.image,
           images: prodData.images,
@@ -10614,6 +10649,11 @@ function attachGlobalHandlers() {
           videos: prodData.videos,
           tiers: Array.isArray(prodData.tiers) ? prodData.tiers : [],
         };
+      }
+      if (node === 'categories') {
+        const nonDeletedCats = existingItems.filter(c => c.status !== 'deleted').length;
+        const fallbackCatOrder = !id ? (nonDeletedCats + 1) : (Number(existingRecord.displayOrder) > 0 ? Number(existingRecord.displayOrder) : 1);
+        next.displayOrder = Number(next.displayOrder) > 0 ? Number(next.displayOrder) : fallbackCatOrder;
       }
       const duplicate = existingItems.find((item) => item.slug && item.slug === next.slug && item.id !== id);
       if (duplicate) {
