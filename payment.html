@@ -2762,14 +2762,47 @@ function mergeOrderWithProduct(orderInfo = {}, productRecord = null) {
   if (orderInfo.isCart) return orderInfo;
   if (!productRecord) return orderInfo;
 
-  const hasCustomPrice = Number.isFinite(orderInfo.amountINRValue) && orderInfo.amountINRValue > 0;
-  const hasTierOrCustomName = Boolean(orderInfo.tier || (orderInfo.name && orderInfo.name !== 'Product' && orderInfo.name !== 'Loading order details...'));
+  // 1. If user selected a valid sub-tier, match official tier price
+  let tierPriceINR = null;
+  let tierPriceUSD = null;
+  if (orderInfo.tier) {
+    const rawTiers = productRecord.record?.tiers || productRecord.tiers;
+    if (Array.isArray(rawTiers)) {
+      const targetTier = String(orderInfo.tier).trim().toLowerCase();
+      const matchedTier = rawTiers.find(t => t && String(t.label || t.name || '').trim().toLowerCase() === targetTier);
+      if (matchedTier) {
+        tierPriceINR = extractMoneyNumber(matchedTier.inr || matchedTier.priceINR);
+        tierPriceUSD = extractMoneyNumber(matchedTier.usd || matchedTier.priceUSD);
+      }
+    }
+  }
 
-  const finalINR = hasCustomPrice ? orderInfo.inr : (productRecord.inr || formatCurrencyValue(productRecord.amountINRValue ?? productRecord.rawINR, 'INR') || orderInfo.inr || '—');
-  const finalUSD = (hasCustomPrice && Number.isFinite(orderInfo.amountUSDValue)) ? orderInfo.usd : (productRecord.usd || formatCurrencyValue(productRecord.amountUSDValue ?? productRecord.rawUSD, 'USD') || orderInfo.usd || '—');
-  const finalINRValue = hasCustomPrice ? orderInfo.amountINRValue : (productRecord.amountINRValue ?? orderInfo.amountINRValue);
-  const finalUSDValue = (hasCustomPrice && Number.isFinite(orderInfo.amountUSDValue)) ? orderInfo.amountUSDValue : (productRecord.amountUSDValue ?? orderInfo.amountUSDValue);
-  const finalName = hasTierOrCustomName ? orderInfo.name : (productRecord.title || productRecord.name || orderInfo.name || 'Product');
+  // 2. Authoritative price security: ALWAYS prioritize catalog / verified tier price to block URL tampering
+  const officialINR = Number.isFinite(tierPriceINR) && tierPriceINR > 0
+    ? tierPriceINR
+    : (Number.isFinite(productRecord.amountINRValue) && productRecord.amountINRValue > 0
+      ? productRecord.amountINRValue
+      : extractMoneyNumber(productRecord.rawINR));
+
+  const officialUSD = Number.isFinite(tierPriceUSD) && tierPriceUSD > 0
+    ? tierPriceUSD
+    : (Number.isFinite(productRecord.amountUSDValue) && productRecord.amountUSDValue > 0
+      ? productRecord.amountUSDValue
+      : extractMoneyNumber(productRecord.rawUSD));
+
+  const finalINRValue = Number.isFinite(officialINR) && officialINR > 0
+    ? officialINR
+    : (Number.isFinite(orderInfo.amountINRValue) && orderInfo.amountINRValue > 0 ? orderInfo.amountINRValue : 599);
+
+  const finalUSDValue = Number.isFinite(officialUSD) && officialUSD > 0
+    ? officialUSD
+    : (Number.isFinite(orderInfo.amountUSDValue) && orderInfo.amountUSDValue > 0 ? orderInfo.amountUSDValue : 34);
+
+  const finalINR = formatCurrencyValue(finalINRValue, 'INR');
+  const finalUSD = formatCurrencyValue(finalUSDValue, 'USD');
+  const finalName = orderInfo.tier
+    ? `${productRecord.title || productRecord.name || 'Product'} (${orderInfo.tier})`
+    : (productRecord.title || productRecord.name || orderInfo.name || 'Product');
 
   return {
     ...orderInfo,
@@ -2778,8 +2811,8 @@ function mergeOrderWithProduct(orderInfo = {}, productRecord = null) {
     name: finalName,
     inr: finalINR,
     usd: finalUSD,
-    rawINR: hasCustomPrice ? orderInfo.rawINR : (productRecord.rawINR || orderInfo.rawINR || ''),
-    rawUSD: hasCustomPrice ? orderInfo.rawUSD : (productRecord.rawUSD || orderInfo.rawUSD || ''),
+    rawINR: finalINRValue,
+    rawUSD: finalUSDValue,
     amountINRValue: finalINRValue,
     amountUSDValue: finalUSDValue,
     available: true,
@@ -3804,8 +3837,12 @@ async function confirmUpload() {
   if (orderSubmissionInProgress) {
     return;
   }
-  if (!screenshotUploaded) {
+  const imgEl = document.getElementById('previewImg');
+  if (!screenshotUploaded || !imgEl || !imgEl.src || imgEl.style.display === 'none' || imgEl.src.length < 50) {
     document.getElementById('alertUpload').classList.add('show');
+    if (typeof showProtectToast === 'function') {
+      showProtectToast('Please select payment screenshot proof before submitting.');
+    }
     return;
   }
 
@@ -4165,13 +4202,20 @@ async function saveOrderToFirebase(amountText, methodName) {
     }
 
     // Process & compress screenshot (<70KB clean JPEG)
-    if (screenshotRaw && screenshotRaw.startsWith('data:')) {
+    if (screenshotRaw && (screenshotRaw.startsWith('data:') || screenshotRaw.startsWith('https://'))) {
       try {
         finalProof = await uploadScreenshot(orderId, screenshotRaw);
       } catch (err) {
         finalProof = screenshotRaw;
       }
+    } else {
+      console.warn('Payment screenshot is required.');
+      return { orderId: '' };
     }
+
+    const resolvedNumericAmount = selectedMethod === 'upi'
+      ? (Number.isFinite(inrAmount) && inrAmount > 0 ? inrAmount : 599)
+      : (Number.isFinite(usdAmount) && usdAmount > 0 ? usdAmount : 34);
 
     // Save order record to DB with compatible fields (no duplicate base64 bloat)
     const payload = {
@@ -4190,18 +4234,16 @@ async function saveOrderToFirebase(amountText, methodName) {
       checkoutToken: orderData.checkoutToken || requestedCheckout.token || null,
       lockedAmountINR: Number.isFinite(inrAmount) ? inrAmount : null,
       lockedAmountUSD: Number.isFinite(usdAmount) ? usdAmount : null,
-      amount: selectedMethod === 'upi'
-        ? (Number.isFinite(inrAmount) ? inrAmount : null)
-        : (Number.isFinite(usdAmount) ? usdAmount : null),
+      amount: resolvedNumericAmount,
       amountDisplay: amountText,
-      amountINR: Number.isFinite(inrAmount) ? inrAmount : null,
-      amountUSD: Number.isFinite(usdAmount) ? usdAmount : null,
+      amountINR: Number.isFinite(inrAmount) && inrAmount > 0 ? inrAmount : resolvedNumericAmount,
+      amountUSD: Number.isFinite(usdAmount) && usdAmount > 0 ? usdAmount : null,
       currency: selectedMethod === 'upi' ? 'INR' : 'USD',
       paymentMethod: methodName,
       method: methodName,
       gateway: methodName,
-      screenshotUrl: finalProof || null,
-      paymentProof: finalProof || null,
+      screenshotUrl: finalProof || screenshotRaw,
+      paymentProof: finalProof || screenshotRaw,
       paymentStatus: 'pending',
       orderStatus: 'pending',
       status: 'pending',

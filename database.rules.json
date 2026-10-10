@@ -4,88 +4,88 @@
     ".write": false,
     "products": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "categories": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "banner": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "hero": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "faq": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "testimonials": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "settings": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "payment": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "media": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "reviews": {
       ".read": true,
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "analytics": {
-      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "admin_sessions": {
-      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "visitors": {
-      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
       "$visitor_id": {
         ".write": true
       }
     },
     "events": {
-      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
       "$event_id": {
         ".write": true
       }
     },
     "customers": {
-      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
       "$customer_id": {
-        ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.uid === $customer_id)",
-        ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.uid === $customer_id)"
+        ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online' || auth.uid === $customer_id)",
+        ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online' || auth.uid === $customer_id)"
       }
     },
     "seller_applications": {
-      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "sellers": {
-      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')"
     },
     "orders": {
       ".read": true,
       ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online')",
       "$order_id": {
         ".read": true,
-        ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online') || (newData.exists() && (!data.exists() || data.child('status').val() === 'pending'))"
+        ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com' || auth.token.email === 'admin@linkadda.online') || (!data.exists() && newData.exists() && newData.child('status').val() === 'pending' && (!newData.child('paymentStatus').exists() || newData.child('paymentStatus').val() === 'pending') && (!newData.child('orderStatus').exists() || newData.child('orderStatus').val() === 'pending') && (newData.child('paymentProof').exists() || newData.child('screenshotUrl').exists()) && newData.child('amount').isNumber() && newData.child('amount').val() > 0 && (!newData.child('downloadLink').exists() || newData.child('downloadLink').val() === '') && (!newData.child('orderLink').exists() || newData.child('orderLink').val() === '') && (!newData.child('fileUrl').exists() || newData.child('fileUrl').val() === ''))"
       }
     }
   }
