@@ -570,19 +570,28 @@
     let images = [];
     let videos = [];
 
-    if (Array.isArray(prod.media) && prod.media.length) {
-      prod.media.forEach((m) => {
-        const val = typeof m === 'string' ? m : (m && m.url ? m.url : '');
-        if (!val) return;
-        if (/\.(mp4|webm|mov|m4v)$/i.test(val) || (m && m.type === 'video')) videos.push(val);
-        else images.push(val);
-      });
+    // Prioritize explicit admin images array; do not resurrect old deleted images from legacy fields
+    if (Array.isArray(prod.images) && prod.images.length) {
+      images = [...prod.images.filter(Boolean)];
+    } else {
+      if (Array.isArray(prod.media) && prod.media.length) {
+        prod.media.forEach((m) => {
+          const val = typeof m === 'string' ? m : (m && m.url ? m.url : '');
+          if (!val) return;
+          if (/\.(mp4|webm|mov|m4v)$/i.test(val) || (m && m.type === 'video')) videos.push(val);
+          else images.push(val);
+        });
+      }
+      if (Array.isArray(prod.galleryImages) && prod.galleryImages.length) images.push(...prod.galleryImages.filter(Boolean));
+      if (prod.image) images.push(prod.image);
     }
-    if (Array.isArray(prod.images) && prod.images.length) images.push(...prod.images.filter(Boolean));
-    if (Array.isArray(prod.galleryImages) && prod.galleryImages.length) images.push(...prod.galleryImages.filter(Boolean));
-    if (prod.image) images.push(prod.image);
-    if (Array.isArray(prod.videos) && prod.videos.length) videos.push(...prod.videos.filter(Boolean));
-    if (prod.video) videos.push(prod.video);
+
+    // Prioritize explicit admin videos array
+    if (Array.isArray(prod.videos)) {
+      videos = [...prod.videos.filter(Boolean)];
+    } else if (prod.video) {
+      videos.push(prod.video);
+    }
 
     const SUPABASE_CDN_ROOT = 'https://dsleaglxbedljdxrikdn.supabase.co/storage/v1/object/public/linkadda-media';
     images = [...new Set(images)].map((u) => {

@@ -2153,6 +2153,7 @@
   }
 
   function resolveMediaList(cat) {
+    if (!cat) return { images: [], videos: [] };
     let primary = extractArrayFromMixed(cat.images);
     let gallery = extractArrayFromMixed(cat.galleryImages);
     let mediaArr = [];
@@ -2164,9 +2165,15 @@
         }
       });
     }
-    let fallback = [cat.image, cat.imageUrl, cat.thumbnail, cat.cover, cat.photo, ...gallery, ...mediaArr].filter(Boolean);
 
-    let rawList = [...new Set([...primary, ...fallback].map(u => String(u || '').trim()).filter(Boolean))];
+    let rawList = [];
+    if (primary.length > 0) {
+      // Prioritize explicit admin images array — do NOT append stale deleted images from legacy fields
+      rawList = primary;
+    } else {
+      // Fallback only if product has NO explicit images array
+      rawList = [...new Set([cat.image, cat.imageUrl, cat.thumbnail, cat.cover, cat.photo, ...gallery, ...mediaArr].map(u => String(u || '').trim()).filter(Boolean))];
+    }
 
     // Only if product has no images at all, check its assigned category
     if (!rawList.length && cat.category && liveCollections.categories) {
@@ -2208,19 +2215,25 @@
       return `${SUPABASE_CDN_ROOT}/products/${clean}`;
     }).filter(Boolean);
 
-    const videoList = Array.isArray(cat.videos) ? cat.videos : [];
-    const videoFallback = cat.video ? [cat.video] : [];
-    const rawVideos = [...new Set([...videoList, ...videoFallback].map(u => String(u || '').trim()).filter(Boolean))];
+    let rawVideos = [];
+    if (Array.isArray(cat.videos)) {
+      rawVideos = cat.videos.map(u => String(u || '').trim()).filter(Boolean);
+    } else if (cat.video) {
+      rawVideos = [String(cat.video).trim()].filter(Boolean);
+    }
+
     const videos = rawVideos.map(v => {
-      if (v.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || (v.includes('supabase.co') && !v.includes('dsleaglxbedljdxrikdn'))) {
-        const pathPart = v.split('/linkadda-media/').pop() || v.split('/public/').pop() || v.split('/').pop();
+      let str = String(v || '').trim();
+      if (!str) return '';
+      if (str.includes('rustfs-mi5c.srv1942099.hstgr.cloud') || (str.includes('supabase.co') && !str.includes('dsleaglxbedljdxrikdn'))) {
+        const pathPart = str.split('/linkadda-media/').pop() || str.split('/public/').pop() || str.split('/').pop();
         return `${SUPABASE_CDN_ROOT}/${pathPart.replace(/^\/+/, '')}`;
       }
-      if (v.startsWith('products/') || v.startsWith('categories/') || v.startsWith('videos/')) {
-        return `${SUPABASE_CDN_ROOT}/${v}`;
+      if (str.startsWith('products/') || str.startsWith('categories/') || str.startsWith('videos/')) {
+        return `${SUPABASE_CDN_ROOT}/${str}`;
       }
-      return v;
-    });
+      return str;
+    }).filter(Boolean);
     return { images, videos };
   }
   window.resolveMediaList = resolveMediaList;

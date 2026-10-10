@@ -774,18 +774,25 @@ function resolveAdminMediaUrl(url) {
 }
 
 function normalizeProductMedia(record = {}) {
-  const rawImage = String(record.image || record.imageUrl || record.thumbnail || record.photo || '').trim();
   const rawImages = (Array.isArray(record.images) ? record.images : normalizeEditorList(record.images || '')).map((u) => String(u || '').trim()).filter(Boolean);
-  const rawGallery = (Array.isArray(record.galleryImages) ? record.galleryImages : normalizeEditorList(record.galleryImages || '')).map((u) => String(u || '').trim()).filter(Boolean);
-  
-  const allImages = [...new Set([rawImage, ...rawImages, ...rawGallery].filter(Boolean))];
-  const mainImage = rawImage || allImages[0] || '';
+  let allImages = [];
+  if (rawImages.length > 0) {
+    allImages = rawImages;
+  } else {
+    const rawImage = String(record.image || record.imageUrl || record.thumbnail || record.photo || '').trim();
+    const rawGallery = (Array.isArray(record.galleryImages) ? record.galleryImages : normalizeEditorList(record.galleryImages || '')).map((u) => String(u || '').trim()).filter(Boolean);
+    allImages = [...new Set([rawImage, ...rawGallery].filter(Boolean))];
+  }
+  const mainImage = String(record.image || allImages[0] || '').trim();
   const galleryImages = allImages.filter((u) => u !== mainImage);
 
-  const rawVideo = String(record.video || '').trim();
-  const rawVideos = (Array.isArray(record.videos) ? record.videos : normalizeEditorList(record.videos || '')).map((u) => String(u || '').trim()).filter(Boolean);
-  const allVideos = [...new Set([rawVideo, ...rawVideos].filter(Boolean))];
-  const mainVideo = rawVideo || allVideos[0] || '';
+  let allVideos = [];
+  if (Array.isArray(record.videos)) {
+    allVideos = record.videos.map((u) => String(u || '').trim()).filter(Boolean);
+  } else if (record.video) {
+    allVideos = [String(record.video).trim()].filter(Boolean);
+  }
+  const mainVideo = String(record.video || allVideos[0] || '').trim();
 
   const mediaItems = [];
   allImages.forEach((url) => {
@@ -8326,9 +8333,11 @@ async function deleteMediaAndDetachFromCatalog(item = {}) {
     let changed = false;
     const nextProd = { ...p };
     if (matchesTarget(nextProd.image)) { nextProd.image = ''; changed = true; }
+    if (matchesTarget(nextProd.imageUrl)) { nextProd.imageUrl = ''; changed = true; }
     if (matchesTarget(nextProd.photo)) { nextProd.photo = ''; changed = true; }
     if (matchesTarget(nextProd.thumbnail)) { nextProd.thumbnail = ''; changed = true; }
     if (matchesTarget(nextProd.video)) { nextProd.video = ''; changed = true; }
+    if (matchesTarget(nextProd.videoUrl)) { nextProd.videoUrl = ''; changed = true; }
     if (Array.isArray(nextProd.images)) {
       const filtered = nextProd.images.filter((img) => !matchesTarget(img));
       if (filtered.length !== nextProd.images.length) { nextProd.images = filtered; changed = true; }
@@ -10672,14 +10681,22 @@ function attachGlobalHandlers() {
           ...next,
           ...prodData,
           displayOrder: resolvedOrder,
-          image: prodData.image,
-          thumbnail: prodData.image,
-          images: prodData.images,
-          galleryImages: prodData.galleryImages,
-          video: prodData.video,
-          videos: prodData.videos,
+          image: prodData.image || '',
+          thumbnail: prodData.image || '',
+          imageUrl: prodData.image || '',
+          images: Array.isArray(prodData.images) ? prodData.images : [],
+          galleryImages: Array.isArray(prodData.galleryImages) ? prodData.galleryImages : [],
+          video: prodData.video || '',
+          videoUrl: prodData.video || '',
+          videos: Array.isArray(prodData.videos) ? prodData.videos : [],
           tiers: Array.isArray(prodData.tiers) ? prodData.tiers : [],
         };
+        delete next.photo;
+        delete next.cover;
+        delete next.media;
+        delete next.mediaUrls;
+        delete next.slides;
+        delete next.thumbnails;
       }
       if (node === 'categories') {
         const nonDeletedCats = existingItems.filter(c => c.status !== 'deleted').length;

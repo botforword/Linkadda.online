@@ -42,11 +42,24 @@ window.__preloadedCatalog={"products":{"indian-desi-pack-11":{"views":8,"image":
         }
       });
     }
-    let fallback = [cat.image, cat.imageUrl, cat.thumbnail, cat.cover, cat.photo, ...gallery, ...mediaArr].filter(Boolean);
-    let rawList = [...new Set([...primary, ...fallback].map(u => String(u || '').trim()).filter(Boolean))];
+
+    let rawList = [];
+    if (primary.length > 0) {
+      rawList = primary;
+    } else {
+      rawList = [...new Set([cat.image, cat.imageUrl, cat.thumbnail, cat.cover, cat.photo, ...gallery, ...mediaArr].map(u => String(u || '').trim()).filter(Boolean))];
+    }
+
+    let rawVideos = [];
+    if (Array.isArray(cat.videos)) {
+      rawVideos = cat.videos.map(u => String(u || '').trim()).filter(Boolean);
+    } else if (cat.video) {
+      rawVideos = [String(cat.video).trim()].filter(Boolean);
+    }
+
     return {
       images: rawList,
-      videos: extractArrayFromMixed(cat.videos || cat.video)
+      videos: rawVideos
     };
   }
 
