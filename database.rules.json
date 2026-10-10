@@ -59,7 +59,10 @@
     },
     "events": {
       ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
-      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')"
+      ".write": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",
+      "$event_id": {
+        ".write": true
+      }
     },
     "customers": {
       ".read": "auth != null && (auth.token.email === 'botforword@gmail.com' || auth.token.email === 'ritikanetwork96@gmail.com')",

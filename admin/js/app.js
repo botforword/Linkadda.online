@@ -110,13 +110,7 @@ const catalogPrefs = readCatalogPrefs();
 const ui = {
   route: 'dashboard',
   catalogTab: 'products',
-  dashboardRange: (() => {
-    try {
-      const saved = localStorage.getItem('linkadda_admin_dashboard_range');
-      if (saved && ['day', 'week', 'month', 'all'].includes(saved)) return saved;
-    } catch (_) {}
-    return 'all';
-  })(),
+  dashboardRange: 'all',
   dashboardMetric: 'visitors',
   media: {
     search: '',
@@ -3011,6 +3005,7 @@ function summarizeDashboard(range = ui.dashboardRange) {
   const allClicksCount = Math.max(events.filter(clickPredicate).length, stats().clicks || 0);
   const allOrdersCount = Math.max(orders.length, stats().orders || 0);
   const allRevenueCount = orders.reduce((sum, item) => isPaidOrder(item) ? sum + parseMetricNumber(item.amount || item.amountINR || 0) : sum, 0);
+  const totalVolumeCount = orders.reduce((sum, item) => sum + parseMetricNumber(item.amount || item.amountINR || item.inr || 0), 0);
 
   const currentVisitors = isAllRange ? allVisitorsCount : countInWindow(visitors, currentWindow.start, currentWindow.end);
   const currentOrders = isAllRange ? allOrdersCount : countInWindow(orders, currentWindow.start, currentWindow.end);
@@ -3035,6 +3030,7 @@ function summarizeDashboard(range = ui.dashboardRange) {
     ordersPrev: prevOrders,
     ordersTrend: percentChange(currentOrders, prevOrders),
     revenue: currentRevenue,
+    totalVolume: totalVolumeCount,
     revenuePrev: prevRevenue,
     revenueTrend: percentChange(currentRevenue, prevRevenue),
     visitorSeries: buildSeries(visitors, range),
@@ -3055,10 +3051,10 @@ function renderRangeSwitch() {
   return `
     <div class="range-switch">
       ${[
+        ['all', 'ALL'],
         ['day', '24H'],
         ['week', '7D'],
         ['month', '30D'],
-        ['all', 'ALL'],
       ].map(([range, label]) => `
         <button class="range-pill ${ui.dashboardRange === range ? 'active' : ''}" data-action="set-range" data-range="${range}">
           ${escapeHtml(label)}
@@ -4649,36 +4645,50 @@ function renderDashboard(data) {
           <div class="dashboard-kpi-grid">
             ${renderKpiCard({
               label: 'Visitors',
-              value: formatNumber(summary.visitors),
+              value: formatNumber(summary.visitors > 0 ? summary.visitors : summary.totals.visitors),
               change: summary.range === 'all' ? null : summary.visitorsTrend,
-              note: summary.range === 'all' ? `All-time unique visitors · ${summary.totals.todaysVisitors || 0} today` : (summary.visitors === 0 && summary.totals.visitors > 0 ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.visitors)} all-time` : `vs previous ${summary.range}`),
+              note: summary.range === 'all'
+                ? `All-time unique visitors · ${summary.totals.todaysVisitors || 0} today`
+                : (summary.visitors === 0
+                    ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.visitors)} all-time`
+                    : `${formatNumber(summary.visitors)} in ${summary.range} · ${formatNumber(summary.totals.visitors)} all-time`),
               icon: 'users',
               series: summary.visitorSeries,
               tone: 'primary',
             })}
             ${renderKpiCard({
               label: 'Order Clicks',
-              value: formatNumber(summary.clicks),
+              value: formatNumber(summary.clicks > 0 ? summary.clicks : summary.totals.clicks),
               change: summary.range === 'all' ? null : summary.clicksTrend,
-              note: summary.range === 'all' ? `All-time store clicks · ${summary.totals.todaysClicks || 0} today` : (summary.clicks === 0 && summary.totals.clicks > 0 ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.clicks)} all-time` : `vs previous ${summary.range}`),
+              note: summary.range === 'all'
+                ? `All-time store clicks · ${summary.totals.todaysClicks || 0} today`
+                : (summary.clicks === 0
+                    ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.clicks)} all-time`
+                    : `${formatNumber(summary.clicks)} in ${summary.range} · ${formatNumber(summary.totals.clicks)} all-time`),
               icon: 'mouse-pointer-click',
               series: summary.clickSeries,
               tone: 'secondary',
             })}
             ${renderKpiCard({
               label: 'Orders',
-              value: formatNumber(summary.orders),
+              value: formatNumber(summary.orders > 0 ? summary.orders : summary.totals.orders),
               change: summary.range === 'all' ? null : summary.ordersTrend,
-              note: summary.range === 'all' ? `All customer orders · ${summary.totals.todaysOrders || 0} today` : (summary.orders === 0 && summary.totals.orders > 0 ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.orders)} all-time` : `vs previous ${summary.range}`),
+              note: summary.range === 'all'
+                ? `All customer orders · ${summary.totals.todaysOrders || 0} today`
+                : (summary.orders === 0
+                    ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.orders)} all-time`
+                    : `${formatNumber(summary.orders)} in ${summary.range} · ${formatNumber(summary.totals.orders)} all-time`),
               icon: 'receipt-text',
               series: summary.orderSeries,
               tone: 'success',
             })}
             ${renderKpiCard({
               label: 'Revenue',
-              value: formatNumber(summary.revenue),
+              value: formatNumber(summary.revenue > 0 ? summary.revenue : summary.totalVolume),
               change: summary.range === 'all' ? null : summary.revenueTrend,
-              note: summary.range === 'all' ? 'All-time verified store revenue' : 'From paid / completed orders',
+              note: summary.revenue > 0
+                ? 'From verified paid orders'
+                : (summary.totalVolume > 0 ? `₹${formatNumber(summary.totalVolume)} in customer orders` : 'From paid / completed orders'),
               icon: 'banknote',
               series: summary.revenueSeries,
               tone: 'accent',
@@ -7404,22 +7414,26 @@ function renderOrdersManagementView(data = {}, fullData = {}) {
 
                   <!-- Col 7: Actions -->
                   <td style="text-align: right;">
-                    <div class="order-actions-toolbar" style="justify-content: flex-end;">
-                      <button class="order-quick-btn view" type="button" data-action="open-order" data-id="${escapeHtml(item.id)}" title="View Proof & Order">
-                        <i data-lucide="eye" style="width: 13px; height: 13px;"></i> View
+                    <div class="order-actions-toolbar" style="display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: nowrap;">
+                      <button class="order-quick-btn view" type="button" data-action="open-order" data-id="${escapeHtml(item.id)}" title="View Proof & Order Details" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 12px; background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.35); cursor: pointer; white-space: nowrap;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span>View</span>
                       </button>
                       ${!isPaid ? `
-                        <button class="order-quick-btn approve" type="button" data-action="approve-order" data-id="${escapeHtml(item.id)}" title="Verify & Approve">
-                          <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+                        <button class="order-quick-btn approve" type="button" data-action="approve-order" data-id="${escapeHtml(item.id)}" title="Verify Payment & Approve Order" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 12px; background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.4); cursor: pointer; white-space: nowrap;">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><polyline points="20 6 9 17 4 12"/></svg>
+                          <span>Approve</span>
                         </button>
                       ` : ''}
                       ${!isFailed ? `
-                        <button class="order-quick-btn reject" type="button" data-action="reject-order" data-id="${escapeHtml(item.id)}" title="Reject Order">
-                          <i data-lucide="x" style="width: 13px; height: 13px;"></i>
+                        <button class="order-quick-btn reject" type="button" data-action="reject-order" data-id="${escapeHtml(item.id)}" title="Reject Order" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 12px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); cursor: pointer; white-space: nowrap;">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                          <span>Reject</span>
                         </button>
                       ` : ''}
-                      <button class="order-quick-btn delete" type="button" data-action="delete-order" data-id="${escapeHtml(item.id)}" title="Delete Order" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.35);">
-                        <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                      <button class="order-quick-btn delete" type="button" data-action="delete-order" data-id="${escapeHtml(item.id)}" title="Delete Order" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 12px; background: rgba(255,255,255,0.04); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; white-space: nowrap;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        <span>Delete</span>
                       </button>
                     </div>
                   </td>

@@ -6516,47 +6516,64 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 10px;
+  gap: 5px;
+  padding: 6px 12px;
+  min-height: 28px;
   border-radius: 8px;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .order-quick-btn.view {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
   color: #a5b4fc;
 }
 
 .order-quick-btn.view:hover {
   background: #6366f1;
   color: #fff;
+  border-color: #6366f1;
 }
 
 .order-quick-btn.approve {
-  background: rgba(16, 185, 129, 0.14);
-  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.4);
   color: #34d399;
 }
 
 .order-quick-btn.approve:hover {
   background: #10b981;
   color: #fff;
+  border-color: #10b981;
 }
 
 .order-quick-btn.reject {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
   color: #f87171;
 }
 
 .order-quick-btn.reject:hover {
   background: #ef4444;
   color: #fff;
+  border-color: #ef4444;
+}
+
+.order-quick-btn.delete {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+
+.order-quick-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
 }
 
 .order-tabs-nav {
