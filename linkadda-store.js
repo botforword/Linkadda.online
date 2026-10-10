@@ -513,6 +513,7 @@
     overlay.scrollLeft = 0;
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
+    document.body.classList.add('fk-product-open');
 
     // Browser history state
     try {
@@ -533,6 +534,7 @@
     }
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
+    document.body.classList.remove('fk-product-open');
     window.__fkActiveProduct = null;
 
     try {

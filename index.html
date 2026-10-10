@@ -3444,6 +3444,8 @@
   function scheduleRenderLiveStore() {
     if (renderDebounceTimer) cancelAnimationFrame(renderDebounceTimer);
     renderDebounceTimer = requestAnimationFrame(() => {
+      const grid = document.getElementById('categoriesGrid');
+      if (grid) grid._lastRenderedHtml = null;
       renderCategoryFilters();
       renderLiveGrid();
       renderPinnedBanner();
@@ -4023,17 +4025,6 @@
   // -- INSTANT 0ms CATALOG BOOTSTRAP (Zero Waiting, Zero Lag) --
   try {
     const preCatalog = window.__preloadedCatalog || {};
-    if (preCatalog.products && Object.keys(preCatalog.products).length) {
-      liveCollections.products = Object.assign({}, preCatalog.products);
-    }
-    if (preCatalog.categories && Object.keys(preCatalog.categories).length) {
-      liveCollections.categories = Object.assign({}, preCatalog.categories);
-    }
-    if (preCatalog.banner && Object.keys(preCatalog.banner).length) {
-      liveCollections.banner = Object.assign({}, preCatalog.banner);
-    }
-
-    // Merge any fresher localStorage cache if it contains products
     const rawAdmin = localStorage.getItem('linkadda_cached_live_data');
     const rawV4 = localStorage.getItem('linkadda_cached_live_data_v4');
     let localData = null;
@@ -4047,37 +4038,25 @@
       }
     } catch (_) {}
 
-    if (localData) {
-      if (localData.products && typeof localData.products === 'object') {
-        Object.keys(localData.products).forEach(id => {
-          if (liveCollections.products[id]) {
-            const freshProd = localData.products[id];
-            const preloadProd = liveCollections.products[id];
-            liveCollections.products[id] = Object.assign({}, preloadProd, freshProd);
-            // Preserve fresh product images from admin; fallback to preload only if image is not provided
-            if (!freshProd.image) {
-              liveCollections.products[id].image = preloadProd.image;
-              liveCollections.products[id].thumbnail = preloadProd.thumbnail || preloadProd.image;
-              if (preloadProd.images && preloadProd.images.length && (!freshProd.images || !freshProd.images.length)) {
-                liveCollections.products[id].images = preloadProd.images;
-              }
-            } else {
-              liveCollections.products[id].image = freshProd.image;
-              liveCollections.products[id].thumbnail = freshProd.thumbnail || freshProd.image;
-              if (freshProd.images && freshProd.images.length) {
-                liveCollections.products[id].images = freshProd.images;
-              }
-            }
-          } else {
-            liveCollections.products[id] = localData.products[id];
-          }
-        });
-      }
+    if (localData && localData.products && Object.keys(localData.products).length > 0) {
+      // Use fresh cached state so deletions and custom ordering from admin are preserved cleanly
+      liveCollections.products = Object.assign({}, localData.products);
       if (localData.categories && Object.keys(localData.categories).length) {
-        liveCollections.categories = Object.assign({}, liveCollections.categories, localData.categories);
+        liveCollections.categories = Object.assign({}, localData.categories);
       }
       if (localData.banner && Object.keys(localData.banner).length) {
-        liveCollections.banner = Object.assign({}, liveCollections.banner, localData.banner);
+        liveCollections.banner = Object.assign({}, localData.banner);
+      }
+    } else {
+      // Fallback to preloaded catalog on very first visit before any cache exists
+      if (preCatalog.products && Object.keys(preCatalog.products).length) {
+        liveCollections.products = Object.assign({}, preCatalog.products);
+      }
+      if (preCatalog.categories && Object.keys(preCatalog.categories).length) {
+        liveCollections.categories = Object.assign({}, preCatalog.categories);
+      }
+      if (preCatalog.banner && Object.keys(preCatalog.banner).length) {
+        liveCollections.banner = Object.assign({}, preCatalog.banner);
       }
     }
 
@@ -4091,9 +4070,16 @@
   function saveCachedLiveData() {
     try {
       if (!liveCollections.products || !Object.keys(liveCollections.products).length) return;
+      // Filter out any deleted items before persisting cache
+      const cleanProducts = {};
+      Object.entries(liveCollections.products).forEach(([id, item]) => {
+        if (item && item.status !== 'deleted') {
+          cleanProducts[id] = item;
+        }
+      });
       const payload = JSON.stringify({
         categories: liveCollections.categories,
-        products: liveCollections.products,
+        products: cleanProducts,
         banner: liveCollections.banner,
         timestamp: Date.now()
       });
@@ -4126,9 +4112,12 @@
     if ((e.key === 'linkadda_cached_live_data' || e.key === 'linkadda_cached_live_data_v4') && e.newValue) {
       try {
         const parsed = JSON.parse(e.newValue);
-        if (parsed.categories && Object.keys(parsed.categories).length) liveCollections.categories = parsed.categories;
-        if (parsed.products && Object.keys(parsed.products).length) liveCollections.products = parsed.products;
-        if (parsed.banner && Object.keys(parsed.banner).length) liveCollections.banner = parsed.banner;
+        if (parsed.categories && typeof parsed.categories === 'object') liveCollections.categories = parsed.categories;
+        if (parsed.products && typeof parsed.products === 'object') {
+          // Direct replacement so add/delete/reorder reflects immediately with 0 delay
+          liveCollections.products = parsed.products;
+        }
+        if (parsed.banner && typeof parsed.banner === 'object') liveCollections.banner = parsed.banner;
         saveCachedLiveData();
         scheduleRenderLiveStore();
       } catch (_) {}

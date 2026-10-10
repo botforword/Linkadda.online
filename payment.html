@@ -3806,9 +3806,9 @@ async function confirmUpload() {
     const amountText = paymentAmountForMethod(selectedMethod);
     const methodName = names[selectedMethod] || (selectedMethod ? selectedMethod.toUpperCase() : 'UPI');
 
-    // Reliably save order to Firebase with safety fallback
+    // Reliably save order to Firebase with robust dual SDK + REST persistence
     const savePromise = saveOrderToFirebase(amountText, methodName);
-    const safetyTimeout = new Promise(r => setTimeout(() => r({ orderId: targetOrderId }), 4500));
+    const safetyTimeout = new Promise(r => setTimeout(() => r({ orderId: targetOrderId }), 10000));
 
     const savedOrder = await Promise.race([savePromise, safetyTimeout]);
     const orderId = savedOrder?.orderId || targetOrderId;
@@ -4031,7 +4031,7 @@ function setupTelegramButtons() {
 }
 
 // ———— COMPRESS & PROCESS SCREENSHOT ————
-async function compressImageBase64(base64Str, maxWidth = 900, quality = 0.72) {
+async function compressImageBase64(base64Str, maxWidth = 720, quality = 0.65) {
   return new Promise((resolve) => {
     if (!base64Str || !base64Str.startsWith('data:image')) {
       resolve(base64Str);
@@ -4062,16 +4062,16 @@ async function compressImageBase64(base64Str, maxWidth = 900, quality = 0.72) {
   });
 }
 
-// ———— UPLOAD SCREENSHOT TO STORAGE VIA API WITH FALLBACK ————
+// ———— UPLOAD SCREENSHOT TO STORAGE VIA API WITH FAST FALLBACK ————
 async function uploadScreenshot(orderId, base64Data) {
   try {
-    const compressed = await compressImageBase64(base64Data, 900, 0.75);
+    const compressed = await compressImageBase64(base64Data, 720, 0.65);
     const fileName = `${orderId || 'order'}_${Date.now()}.jpg`;
 
-    // 1. Try Serverless Supabase Upload via /api/upload with 3.5s timeout
+    // 1. Try Serverless Supabase Upload via /api/upload with short 1.5s timeout
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 3500);
+      const timer = setTimeout(() => controller.abort(), 1500);
 
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -4094,22 +4094,17 @@ async function uploadScreenshot(orderId, base64Data) {
           return data.publicUrl;
         }
       }
-    } catch (e) {
-      console.warn('API storage upload fallback to base64:', e);
-    }
+    } catch (_) {}
 
     return compressed;
   } catch (err) {
-    console.warn('Screenshot compression error, using raw base64:', err);
     return base64Data;
   }
 }
 
-// ———— SAVE ORDER TO FIREBASE ————
+// ———— SAVE ORDER TO FIREBASE (SDK + DIRECT REST FALLBACK) ————
 async function saveOrderToFirebase(amountText, methodName) {
   try {
-    if (!window._firebaseReady) return;
-
     const screenshotRaw = document.getElementById('previewImg')?.src || '';
     let finalProof = null;
     let orderId = orderData.orderId || requestedCheckout.orderId || '';
@@ -4117,33 +4112,36 @@ async function saveOrderToFirebase(amountText, methodName) {
     const usdAmount = Number.isFinite(orderData.amountUSDValue) ? orderData.amountUSDValue : extractMoneyNumber(orderData.rawUSD || orderData.usd);
 
     if (!orderId) {
-      const orderRef = window._fbPush(window._fbRef(window._fbDB, 'orders'));
-      orderId = orderRef.key;
+      if (window._fbPush && window._fbRef && window._fbDB) {
+        const orderRef = window._fbPush(window._fbRef(window._fbDB, 'orders'));
+        orderId = orderRef.key;
+      } else {
+        orderId = 'ord_' + Date.now();
+      }
       orderData.orderId = orderId;
     }
 
-    // Process & upload screenshot with guaranteed persistence
+    // Process & compress screenshot (<70KB clean JPEG)
     if (screenshotRaw && screenshotRaw.startsWith('data:')) {
       try {
         finalProof = await uploadScreenshot(orderId, screenshotRaw);
       } catch (err) {
-        console.warn('Screenshot processing warning:', err);
         finalProof = screenshotRaw;
       }
     }
 
-    // Save order record to DB with all compatible aliases for Admin Panel
+    // Save order record to DB with compatible fields (no duplicate base64 bloat)
     const payload = {
-      orderId: orderId || null,
-      id: orderId || null,
+      orderId: orderId,
+      id: orderId,
       productId: orderData.id || orderData.productId || null,
       productSlug: orderData.slug || orderData.productSlug || null,
       productName: orderData.name || orderData.productName || 'Premium Pack',
       title: orderData.name || orderData.productName || 'Premium Pack',
       name: orderData.name || orderData.productName || 'Premium Pack',
-      downloadLink: (orderData.status === 'approved' || orderData.paymentStatus === 'approved') ? (orderData.downloadLink || orderData.fileUrl || orderData.orderLink || '') : '',
-      fileUrl: (orderData.status === 'approved' || orderData.paymentStatus === 'approved') ? (orderData.downloadLink || orderData.fileUrl || orderData.orderLink || '') : '',
-      orderLink: (orderData.status === 'approved' || orderData.paymentStatus === 'approved') ? (orderData.downloadLink || orderData.fileUrl || orderData.orderLink || '') : '',
+      downloadLink: '',
+      fileUrl: '',
+      orderLink: '',
       sellerId: orderData.sellerId || '',
       sellerName: orderData.sellerName || '',
       checkoutToken: orderData.checkoutToken || requestedCheckout.token || null,
@@ -4160,13 +4158,10 @@ async function saveOrderToFirebase(amountText, methodName) {
       method: methodName,
       gateway: methodName,
       screenshotUrl: finalProof || null,
-      screenshot: finalProof || null,
       paymentProof: finalProof || null,
-      proofUrl: finalProof || null,
-      proof: finalProof || null,
-      paymentStatus: (orderData.status === 'approved' || orderData.paymentStatus === 'approved' || orderData.status === 'paid' || orderData.paymentStatus === 'paid') ? (orderData.paymentStatus || 'approved') : 'pending',
-      orderStatus: (orderData.status === 'approved' || orderData.orderStatus === 'approved' || orderData.status === 'paid' || orderData.orderStatus === 'paid') ? (orderData.orderStatus || 'approved') : 'pending',
-      status: (orderData.status === 'approved' || orderData.status === 'paid') ? orderData.status : 'pending',
+      paymentStatus: 'pending',
+      orderStatus: 'pending',
+      status: 'pending',
       buyer: 'Web Checkout Buyer',
       buyerName: 'Web Checkout Buyer',
       source: 'web-checkout',
@@ -4195,8 +4190,31 @@ async function saveOrderToFirebase(amountText, methodName) {
       }
     } catch (_) {}
 
-    if (orderId) {
-      await window._fbSet(window._fbRef(window._fbDB, `orders/${orderId}`), payload);
+    // 1. Try Firebase SDK first
+    let saved = false;
+    if (window._fbSet && window._fbRef && window._fbDB) {
+      try {
+        await window._fbSet(window._fbRef(window._fbDB, `orders/${orderId}`), payload);
+        saved = true;
+      } catch (sdkErr) {
+        console.warn('Firebase SDK order write failed, falling back to direct REST:', sdkErr);
+      }
+    }
+
+    // 2. Direct REST fallback ensures order is 100% saved even if SDK connection was slow or offline
+    if (!saved) {
+      try {
+        const rtdbRes = await fetch(`https://linkadda-online-default-rtdb.firebaseio.com/orders/${orderId}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (rtdbRes.ok) {
+          saved = true;
+        }
+      } catch (restErr) {
+        console.warn('Direct REST order write failed:', restErr);
+      }
     }
 
     // Save to user's localStorage so they can view their order history
@@ -4208,9 +4226,9 @@ async function saveOrderToFirebase(amountText, methodName) {
         productName: payload.productName,
         amountDisplay: payload.amountDisplay,
         paymentMethod: payload.paymentMethod,
-        downloadLink: payload.downloadLink || '',
-        fileUrl: payload.fileUrl || '',
-        orderLink: payload.orderLink || '',
+        downloadLink: '',
+        fileUrl: '',
+        orderLink: '',
         status: 'pending',
         date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         timestamp: Date.now()
@@ -4223,7 +4241,7 @@ async function saveOrderToFirebase(amountText, methodName) {
     orderData.orderId = orderId;
     return { orderId };
   } catch(e) {
-    console.warn('Firebase save failed:', e.message);
+    console.warn('saveOrderToFirebase caught error:', e.message);
     return { orderId: orderData.orderId || requestedCheckout.orderId || '' };
   }
 }

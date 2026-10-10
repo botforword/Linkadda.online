@@ -1581,6 +1581,13 @@
     box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.6) !important;
   }
 
+  body.fk-product-open .fk-mobile-appbar,
+  body:has(#fkProductPageOverlay.active) .fk-mobile-appbar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
   [data-theme="light"] .fk-mobile-appbar {
     background: rgba(255, 255, 255, 0.98) !important;
     border-top-color: #e2e8f0 !important;

@@ -4645,50 +4645,44 @@ function renderDashboard(data) {
           <div class="dashboard-kpi-grid">
             ${renderKpiCard({
               label: 'Visitors',
-              value: formatNumber(summary.visitors > 0 ? summary.visitors : summary.totals.visitors),
+              value: formatNumber(summary.visitors),
               change: summary.range === 'all' ? null : summary.visitorsTrend,
               note: summary.range === 'all'
-                ? `All-time unique visitors · ${summary.totals.todaysVisitors || 0} today`
-                : (summary.visitors === 0
-                    ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.visitors)} all-time`
-                    : `${formatNumber(summary.visitors)} in ${summary.range} · ${formatNumber(summary.totals.visitors)} all-time`),
+                ? `All-time store traffic · ${summary.totals.todaysVisitors || 0} today`
+                : `${summary.range === 'day' ? 'Last 24 Hours' : summary.range === 'week' ? 'Last 7 Days' : 'Last 30 Days'} · ${formatNumber(summary.totals.visitors)} all-time`,
               icon: 'users',
               series: summary.visitorSeries,
               tone: 'primary',
             })}
             ${renderKpiCard({
               label: 'Order Clicks',
-              value: formatNumber(summary.clicks > 0 ? summary.clicks : summary.totals.clicks),
+              value: formatNumber(summary.clicks),
               change: summary.range === 'all' ? null : summary.clicksTrend,
               note: summary.range === 'all'
                 ? `All-time store clicks · ${summary.totals.todaysClicks || 0} today`
-                : (summary.clicks === 0
-                    ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.clicks)} all-time`
-                    : `${formatNumber(summary.clicks)} in ${summary.range} · ${formatNumber(summary.totals.clicks)} all-time`),
+                : `${summary.range === 'day' ? 'Last 24 Hours' : summary.range === 'week' ? 'Last 7 Days' : 'Last 30 Days'} · ${formatNumber(summary.totals.clicks)} all-time`,
               icon: 'mouse-pointer-click',
               series: summary.clickSeries,
               tone: 'secondary',
             })}
             ${renderKpiCard({
               label: 'Orders',
-              value: formatNumber(summary.orders > 0 ? summary.orders : summary.totals.orders),
+              value: formatNumber(summary.orders),
               change: summary.range === 'all' ? null : summary.ordersTrend,
               note: summary.range === 'all'
                 ? `All customer orders · ${summary.totals.todaysOrders || 0} today`
-                : (summary.orders === 0
-                    ? `0 in ${summary.range === 'day' ? '24h' : summary.range} · ${formatNumber(summary.totals.orders)} all-time`
-                    : `${formatNumber(summary.orders)} in ${summary.range} · ${formatNumber(summary.totals.orders)} all-time`),
+                : `${summary.range === 'day' ? 'Last 24 Hours' : summary.range === 'week' ? 'Last 7 Days' : 'Last 30 Days'} · ${formatNumber(summary.totals.orders)} all-time`,
               icon: 'receipt-text',
               series: summary.orderSeries,
               tone: 'success',
             })}
             ${renderKpiCard({
               label: 'Revenue',
-              value: formatNumber(summary.revenue > 0 ? summary.revenue : summary.totalVolume),
+              value: formatNumber(summary.range === 'all' ? (summary.revenue > 0 ? summary.revenue : summary.totalVolume) : summary.revenue),
               change: summary.range === 'all' ? null : summary.revenueTrend,
-              note: summary.revenue > 0
-                ? 'From verified paid orders'
-                : (summary.totalVolume > 0 ? `₹${formatNumber(summary.totalVolume)} in customer orders` : 'From paid / completed orders'),
+              note: summary.range === 'all'
+                ? (summary.totalVolume > 0 ? `₹${formatNumber(summary.totalVolume)} in customer orders` : 'All-time verified revenue')
+                : `${summary.range === 'day' ? 'Last 24 Hours' : summary.range === 'week' ? 'Last 7 Days' : 'Last 30 Days'} · ₹${formatNumber(summary.totalVolume)} all-time`,
               icon: 'banknote',
               series: summary.revenueSeries,
               tone: 'accent',
